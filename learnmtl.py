@@ -4,13 +4,18 @@ import numpy as np
 import numpy as np
 
 from copy import deepcopy as copy
-from .logger import logger
+from logger import logger
 import pyximport
-from .cceamtl import *
+pyximport.install()
+from cceamtl import *
 from itertools import combinations
 #from math import comb
 from collections import deque
 from random import sample
+
+from hand import split_observation, setup_joints
+JOINTS = setup_joints()
+
 import torch
 device = torch.device("cpu") 
 torch.autograd.set_detect_anomaly(False)
@@ -88,13 +93,16 @@ class learner:
         self.data["World Index"] = 0
         
         #policy shape
-        initCcea(input_shape=8, num_outputs=2, num_units=20, num_types=types)(self.data)
+        initCcea(input_shape=22, num_outputs=1, num_units=20, num_types=types)(self.data)
         
 
     def act(self,S,data,trial):
         policyCol=data["Agent Policies"]
         A=[]
-        for s,pol in zip(S,policyCol):
+
+        states = split_observation(JOINTS, S)
+
+        for s,pol in zip(states,policyCol):
   
             a = pol.get_action(s)*2.0
             A.append(a)
@@ -166,7 +174,6 @@ class learner:
             self.data["World Index"]=worldIndex
             
             #for agent_idx in range(self.types):
-            
             for team in self.team:
                 s = env.reset() 
                 done=False 
@@ -179,7 +186,8 @@ class learner:
                     action=self.act(s,self.data,0)
                     S.append(s)
                     A.append(action)
-                    s, r, done, info = env.step(action)
+                    s, r, terminated, truncated, info = env.step(action)
+                    done = terminated or truncated
                 #S,A=[S[-1]],[A[-1]]
                 pols=self.data["Agent Policies"] 
                 g=r#env.data["Global Reward"]
@@ -204,7 +212,7 @@ class learner:
             
 
         if train_flag==1 or train_flag==2 or train_flag==3:
-            self.updateD(env)
+            self.updateD()  # env)
         train_set=np.unique(np.array(self.team))
         for t in np.unique(np.array(self.team)):
             #if train_flag==1:
@@ -240,7 +248,7 @@ class learner:
                     p.fitness=d
         
 
-        evolveCceaPolicies(env.data,train_set)
+        evolveCceaPolicies(self.data,train_set)
 
         self.log.store("reward",max(G))      
         return max(G)
