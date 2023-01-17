@@ -67,9 +67,14 @@ def setup_joints():
     return joints
 
 
-joints = setup_joints()
+def test():
+    joints = setup_joints()
 
-env = gym.make("HandManipulateBlockRotateZDense-v1")
-state, _ = env.reset()
+    env = gym.make("HandManipulateBlockRotateZDense-v1")
+    state, _ = env.reset()
 
-state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
+    state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
+
+
+if __name__=="__main__":
+    test()
