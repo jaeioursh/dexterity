@@ -29,6 +29,12 @@ class Joint:
 
 def split_observation(joints, obs):
     obs_list = []
+
+    try:
+        iter(obs)
+        obs = obs[0]
+    except:
+        pass
     goal = obs["desired_goal"]
 
     for j in joints:

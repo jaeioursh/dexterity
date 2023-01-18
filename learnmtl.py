@@ -35,10 +35,10 @@ def comb(n, r):
 
 
 class Net:
-    def __init__(self,hidden=30):
+    def __init__(self,hidden=50):
         learning_rate=1e-3
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(8, hidden),
+            torch.nn.Linear(22, hidden),
             torch.nn.Tanh(),
             torch.nn.Linear(hidden, hidden),
             torch.nn.Tanh(),
@@ -100,7 +100,12 @@ class learner:
         policyCol=data["Agent Policies"]
         A=[]
 
-        states = split_observation(JOINTS, S)
+        try:
+            iter(S)
+            S = S[0]
+        except:
+            pass
+        states = split_observation(JOINTS, S)  #["observation"])
 
         for s,pol in zip(states,policyCol):
   
@@ -184,14 +189,16 @@ class learner:
                     self.itr+=1
                     
                     action=self.act(s,self.data,0)
-                    S.append(s)
+                    action = np.array(action).flatten()
+                    agent_states = split_observation(JOINTS, s)
+                    S.append(agent_states)
                     A.append(action)
                     s, r, terminated, truncated, info = env.step(action)
                     done = terminated or truncated
                 #S,A=[S[-1]],[A[-1]]
                 pols=self.data["Agent Policies"] 
                 g=r#env.data["Global Reward"]
-                for i in range(len(s)):
+                for i in range(len(S[0])):
 
                     #d=r[i]
                     
@@ -209,7 +216,7 @@ class learner:
                     pols[i].Z.append(S[-1][i])
                         
                 G.append(g)
-            
+        
 
         if train_flag==1 or train_flag==2 or train_flag==3:
             self.updateD()  # env)
@@ -250,7 +257,7 @@ class learner:
 
         evolveCceaPolicies(self.data,train_set)
 
-        self.log.store("reward",max(G))      
+        #self.log.store("reward",max(G))      
         return max(G)
 
     
@@ -258,9 +265,9 @@ class learner:
     def updateD(self):
         
         for i in np.unique(np.array(self.team)):
-            for q in range(25):
+            for q in range(25): #num batches
                 S,A,D=[],[],[]
-                SAD=robust_sample(self.hist[i],100)
+                SAD=robust_sample(self.hist[i],100) #batch size
                 
                 for samp in SAD:
                     S.append(samp[0])
