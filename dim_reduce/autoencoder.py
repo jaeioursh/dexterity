@@ -6,6 +6,7 @@ from torch import nn
 import numpy as np
 import pickle
 import tqdm
+from math import ceil
 
 
 def dataset_stats(x):
@@ -92,11 +93,11 @@ def main():
         data = pickle.load(f)
     mins, ranges = dataset_stats(data)
     data_norm = normalize(data, mins, ranges)
-    np.random.shuffle(data_norm.T)  # In-place shuffle along t dimension
 
     # Split to train/val
     train_ratio = 0.8
     n_t = round(train_ratio * data_norm.shape[1])
+    np.random.shuffle(data_norm.T)  # In-place shuffle along instance dimension
     train = data_norm[:, :n_t]
     val = data_norm[:, n_t:]
 
@@ -111,35 +112,49 @@ def main():
     optim = torch.optim.Adam(model.parameters(), lr=1e-2)
     scheduler = torch.optim.lr_scheduler.StepLR(
         optim,
-        step_size=10000,
+        step_size=1000,
         gamma=0.5,
     )
 
     # Train
-    epochs = 100000
+    n_cols = train_torch.size()[1]
+    batchsize = 256
+    epochs = 10000
     losses = []
 
-    pbar = tqdm.trange(epochs)
+    pbar = tqdm.trange(epochs, dynamic_ncols=True)
     try:
         for epoch in pbar:
-            # Batch gradient descent for Big Speed
-            optim.zero_grad()
-            out = model.forward(train_torch)
-            loss = loss_fn(train_torch, out)
+            # Minibatches
+            cols = torch.randperm(n_cols)
+            loss = []
+            for i in range(ceil(n_cols / batchsize)):
+                # Build minibatch
+                start = i * batchsize
+                end = min((i+1) * batchsize, n_cols)
+                batch = train_torch[:, start:end]
 
-            loss.backward()
-            optim.step()
+                # Forward pass
+                optim.zero_grad()
+                out = model.forward(batch)
+                l = loss_fn(train_torch, out)
+
+                # Backward pass
+                l.backward()
+                optim.step()
+                loss.append(l.detach().cpu())
             scheduler.step()
+
+            # Get avg loss from minibatches
+            loss = sum(loss) / len(loss)
 
             # Validation
             out = model.forward(val_torch)
             loss_val = loss_fn(val_torch, out)
 
-            losses.append(loss.detach().cpu())  # Need to detach or memory leaks
+            losses.append(loss_val.detach().cpu())  # Need to detach or memory leaks
             pbar.set_description(f"Train: {loss:.3E}, Val: {loss_val:.3E}, LR: {scheduler.get_last_lr()[0]:.3E}")
 
-            if epoch % 20 == 0:
-                torch.cuda.empty_cache()  # Not actually sure if this helped
     except KeyboardInterrupt:
         print("Ending early!")
 
