@@ -68,8 +68,11 @@ class Autoencoder(nn.Module):
         super().__init__()
 
         self.encoder = model_from_list(encoder_dims)
+        self.encoder.add_module("sigmoid_1", nn.Sigmoid())  # Constrains latent dims to [0,1]
+
         encoder_dims.reverse()
         self.decoder = model_from_list(encoder_dims)
+        encoder_dims.reverse()  # put it back how we found it :)
 
     def forward(self, x):
         x = self.encoder.forward(x)  # Encode
@@ -79,12 +82,10 @@ class Autoencoder(nn.Module):
 
 def main():
     # Architecture for our model
-    n_dims = 48
-    n_hid1 = 30
-    n_hid2 = 20
-    n_hid3 = 10
-    n_latent = 5
-    layers = [n_dims, n_hid1, n_hid2, n_hid3, n_latent]
+    n_dims = [48]
+    n_hid = [100,100,24]
+    n_latent = [6]
+    layers = n_dims + n_hid + n_latent  # list addition
 
     model = Autoencoder(layers)
 
@@ -108,18 +109,20 @@ def main():
     val_torch = torch.Tensor(val.T).to(device)
 
     # Set up the good stuff
+    lr = 1e-3
+    sched_step, sched_gamma = 5000, 0.5
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-2)
+    optim = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.StepLR(
         optim,
-        step_size=1000,
-        gamma=0.5,
+        step_size=sched_step,
+        gamma=sched_gamma,
     )
 
     # Train
     n_cols = train_torch.size()[1]
     batchsize = 256
-    epochs = 10000
+    epochs = 100000
     losses = []
 
     pbar = tqdm.trange(epochs, dynamic_ncols=True)
@@ -143,26 +146,36 @@ def main():
                 l.backward()
                 optim.step()
                 loss.append(l.detach().cpu())
-            scheduler.step()
 
-            # Get avg loss from minibatches
-            loss = sum(loss) / len(loss)
+            # Stop overzealous LR schedulers
+            last_lr = scheduler.get_last_lr()[0]
+            if last_lr >= 1e-5:
+                scheduler.step()
 
-            # Validation
-            out = model.forward(val_torch)
-            loss_val = loss_fn(val_torch, out)
+            # Only validate and update progress bar every 100 epochs
+            if i % 100 == 0:
+                # Get avg loss from minibatches
+                loss = sum(loss) / len(loss)
 
-            losses.append(loss_val.detach().cpu())  # Need to detach or memory leaks
-            pbar.set_description(f"Train: {loss:.3E}, Val: {loss_val:.3E}, LR: {scheduler.get_last_lr()[0]:.3E}")
+                # Validation
+                out = model.forward(val_torch)
+                loss_val = loss_fn(val_torch, out)
+
+                losses.append(loss_val.detach().cpu())  # Need to detach or memory leaks
+                pbar.set_description(f"Train: {loss:.3E}, Val: {loss_val:.3E}, LR: {last_lr:.3E}")
 
     except KeyboardInterrupt:
         print("Ending early!")
 
-    with open("ae_trained.pkl", "wb") as f:
+    layerstr = "_".join([str(l) for l in layers])
+    with open(f"ae_trained_{layerstr}.pkl", "wb") as f:
         out = {
             'model': model.cpu(),
             'mins': mins.flatten(),
             'ranges': ranges.flatten(),
+            'loss': losses[-1],
+            'architecture': layers,
+            'params': (epochs, batchsize, lr, sched_step, sched_gamma),
         }
         pickle.dump(out, f)
         print("Saved model!")
