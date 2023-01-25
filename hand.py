@@ -6,6 +6,7 @@ joint maps 22 -> 1
 '''
 import gymnasium as gym
 import numpy as np
+from time import time
 
 class Joint:
     def __init__(self, idxs_obs, idxs_act):
@@ -75,12 +76,30 @@ def setup_joints():
 
 def test():
     joints = setup_joints()
-
-    env = gym.make("HandManipulateBlockRotateZDense-v1")
+    #                   x,y,z ,qw,qx,qy,qz
+    start_pos=np.array([0,0,0,0,0,0,0],dtype=np.float64)
+    end_pos=np.array([0,0,0,1,0,0,0],dtype=np.float64)
+    steps=50
+    r_mode="human"
+    #r_mode=None
+    env = gym.make("HandManipulateBlockRotateZDense-v1",target_position="fixed",max_episode_steps=steps,render_mode=r_mode)
+    env.env.env.env.randomize_initial_position=False
+    env.env.env.env.randomize_initial_rotation=False
     state, _ = env.reset()
-
-    state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
-
+    end_pos=env.env.env.env.goal.copy()
+    #env.env.env.env.data.randomize_initial_position=False
+    #env.env.env.env.data.randomize_initial_rotation=False
+    tic=time()
+    for q in range(10):
+        
+        state, _ = env.reset()
+        env.env.env.env.goal=end_pos
+        obs=env.env.env.env._get_obs()
+        diff=obs["observation"]-state["observation"]
+        print(obs)
+        state, reward, terminated, truncated, _ = env.step([-1 for _ in range(20)])
+    toc=time()
+    print("Time: ",toc-tic," seconds")
 
 if __name__=="__main__":
     test()
