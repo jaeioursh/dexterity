@@ -82,22 +82,23 @@ def test():
     steps=50
     r_mode="human"
     #r_mode=None
-    env = gym.make("HandManipulateBlockRotateZDense-v1",target_position="fixed",max_episode_steps=steps,render_mode=r_mode)
-    env.env.env.env.randomize_initial_position=False
-    env.env.env.env.randomize_initial_rotation=False
+    env = gym.make("HandManipulateBlockRotateZDense-v1",target_position="fixed",target_rotation="fixed",max_episode_steps=steps,render_mode=r_mode)
+    #env.env.env.env.randomize_initial_position=False
+    #env.env.env.env.randomize_initial_rotation=False
     state, _ = env.reset()
-    end_pos=env.env.env.env.goal.copy()
+    #end_pos=env.env.env.env.unwrapped.goal.copy()
     #env.env.env.env.data.randomize_initial_position=False
     #env.env.env.env.data.randomize_initial_rotation=False
     tic=time()
     for q in range(10):
         
         state, _ = env.reset()
-        env.env.env.env.goal=end_pos
+        #env.env.env.env.goal=end_pos
         obs=env.env.env.env._get_obs()
         diff=obs["observation"]-state["observation"]
         print(obs)
-        state, reward, terminated, truncated, _ = env.step([-1 for _ in range(20)])
+        for i in range(1):
+            state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
     toc=time()
     print("Time: ",toc-tic," seconds")
 

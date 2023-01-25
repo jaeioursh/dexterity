@@ -1,19 +1,31 @@
-import gymnasium as gym
+from shadow import hand
 import tqdm
-from learnmtl import learner
+from time import time
+import numpy as np
 
+def test():
 
-def main():
+    #                   x,y,z ,qw,qx,qy,qz
+    start_pos=np.array([0,0,0,0,0,0,0],dtype=np.float64)
+    end_pos=np.array([0,0,0,1,0,0,0],dtype=np.float64)
+    steps=50
+    r_mode="human"
+    #r_mode=None
+    env = hand(max_episode_steps=steps,render_mode=r_mode)
+   
+    state, _ = env.reset()
+    
+    #env.env.env.env.data.randomize_initial_position=False
+    #env.env.env.env.data.randomize_initial_rotation=False
+    tic=time()
+    for q in range(10):
+        
+        state, _ = env.reset()
+        
+        for i in range(1):
+            state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
+    toc=time()
+    print("Time: ",toc-tic," seconds")
 
-    env = gym.make("HandManipulateBlockRotateZDense-v1", max_episode_steps=25)
-            #sub team size, total number of agents
-    l = learner(20, 20)
-    l.set_teams(1)
-
-    pbar = tqdm.trange(100)
-    for i in pbar:
-        pbar.set_description(f"{i}: {l.run(env, 3)}")
-
-
-if __name__=="__main__":
-    main()
+if __name__ == "__main__":
+    test()
