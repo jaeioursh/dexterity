@@ -27,7 +27,9 @@ class hand(MujocoManipulateEnv, EzPickle):
             **kwargs,
         )
         EzPickle.__init__(self, target_position, target_rotation, reward_type, **kwargs)
-        self.rng_range=0
+        self.rot_range=0
+        self.pos_range=0
+
 
     def _sample_goal(self):
         # Select a goal for the object position.
@@ -35,26 +37,38 @@ class hand(MujocoManipulateEnv, EzPickle):
         target_pos = self._utils.get_joint_qpos(
             self.model, self.data, "object:joint"
         )[:3]
-       
+        target_pos+=self.np_random.uniform(-self.pos_range, self.pos_range,3)
 
         # Select a goal for the object rotation.
         
         
-        angle = self.np_random.uniform(-self.rng_range, self.rng_range)
-        axis = np.array([0.0, 0.0, 1.0])
+        angle = self.np_random.uniform(-self.rot_range, self.rot_range)+1
+        axis = np.array([0.0, 0.0, 1.0])+self.np_random.uniform(0, self.rot_range,3)
         target_quat = quat_from_angle_and_axis(angle, axis)
         
 
         target_quat /= np.linalg.norm(target_quat)  # normalized quaternion
         goal = np.concatenate([target_pos, target_quat])
-        print(goal)
+        #print(goal)
         return goal
+
+    def compute_reward(self, achieved_goal, goal, info):
+            if self.reward_type == "sparse":
+                success = self._is_success(achieved_goal, goal).astype(np.float32)
+                return success - 1.0
+            else:
+                d_pos, d_rot = self._goal_distance(achieved_goal, goal)
+                # We weigh the difference in position to avoid that `d_pos` (in meters) is completely
+                # dominated by `d_rot` (in radians).
+                return -(0.1 * d_pos + d_rot)
 
 if __name__ =="__main__":
     env = hand(render_mode="human")
-    for q in range(10):
+    for q in range(30):
         
         state, _ = env.reset()
-        env.rng_range=q/10
+        env.rot_range=q/10
+        env.pos_range=q/500
         for i in range(20):
             state, reward, terminated, truncated, _ = env.step([-1 for _ in range(20)])
+            print(reward)

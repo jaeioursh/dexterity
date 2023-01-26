@@ -12,6 +12,7 @@ from itertools import combinations
 #from math import comb
 from collections import deque
 from random import sample
+from multiprocessing import Process,Queue
 
 from hand import split_observation, setup_joints
 JOINTS = setup_joints()
@@ -73,7 +74,8 @@ def robust_sample(data,n):
 
 class learner:
                     #total agents, subteam size
-    def __init__(self,nagents,types):
+    def __init__(self,nagents,types,train_flag):
+        self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
         self.hist=[deque(maxlen=20000) for i in range(types)]
@@ -88,28 +90,29 @@ class learner:
         self.test_teams=self.every_team
 
         self.data={}
-        
-        self.data["Number of Policies"]=32 #pop size
+        self.pop_size=32
+        self.data["Number of Policies"]=self.pop_size #pop size
         self.data["World Index"] = 0
         
         #policy shape
-        initCcea(input_shape=22, num_outputs=1, num_units=20, num_types=types)(self.data)
+        if train_flag>=0:
+            initCcea(input_shape=22, num_outputs=1, num_units=20, num_types=types)(self.data)
+        else:    
+            initCcea(input_shape=61, num_outputs=20, num_units=30, num_types=1)(self.data)
         
 
     def act(self,S,data,trial):
         policyCol=data["Agent Policies"]
         A=[]
 
-        try:
-            iter(S)
-            S = S[0]
-        except:
-            pass
-        states = split_observation(JOINTS, S)  #["observation"])
+        if self.train_flag>=0:
+            states = split_observation(JOINTS, S)  #["observation"])
+        else:
+            states = S
 
         for s,pol in zip(states,policyCol):
   
-            a = pol.get_action(s)*2.0
+            a = pol.get_action(s)
             A.append(a)
         return np.array(A)
     
@@ -168,56 +171,105 @@ class learner:
     #train_flag=3 - fitness critic
     #train_flag=4 - D*
     #train_flag=5 - G*
-    def run(self,env,train_flag):
 
+    def proc(self,q,idx,env):
+
+        self.data["World Index"]=idx
+            
+        #for agent_idx in range(self.types):
+        data=[]
+        for team in self.team:
+            s = env.reset() 
+            s=s[0]
+            done=False 
+            #assignCceaPoliciesHOF(env.data)
+            assignCceaPolicies(self.data,team)
+            S,A=[],[]
+            for i in range(100):
+                self.itr+=1
+                if self.train_flag>=0:
+                    agent_states = split_observation(JOINTS, s)
+                else:
+                    agent_states = np.array([s["observation"]])
+                action=self.act(agent_states,self.data,0)
+                action = np.array(action).flatten()
+                
+                S.append(agent_states)
+                A.append(action)
+                s, r, terminated, truncated, info = env.step(action)
+                done = terminated or truncated
+            #S,A=[S[-1]],[A[-1]]
+            data.append([r,S,A,team])
+            
+            #G.append(g)
+        if q is not None:
+            q.put([data,idx])
+        return [data,idx]
+    def view(self,env):
+        frames=[]
+        for idx in range(self.pop_size):
+            self.data["World Index"]=idx
+                
+            for team in self.team:
+                s = env.reset() 
+                s=s[0]
+                assignCceaPolicies(self.data,team)
+                S,A=[],[]
+                for i in range(100):
+                    if self.train_flag>=0:
+                        agent_states = split_observation(JOINTS, s)
+                    else:
+                        agent_states = np.array([s["observation"]])
+                    action=self.act(agent_states,self.data,0)
+                    action = np.array(action).flatten()
+
+                    s, r, terminated, truncated, info = env.step(action)
+                    frames.append(env.render())
+        return frames
+    def run(self,env,parallel=True):
+        train_flag=self.train_flag
         populationSize=len(self.data['Agent Populations'][0])
         pop=self.data['Agent Populations']
         #team=self.team[0]
         G=[]
-        
-        for worldIndex in range(populationSize):
-            self.data["World Index"]=worldIndex
-            
-            #for agent_idx in range(self.types):
-            for team in self.team:
-                s = env.reset() 
-                done=False 
-                #assignCceaPoliciesHOF(env.data)
-                assignCceaPolicies(self.data,team)
-                S,A=[],[]
-                while not done:
-                    self.itr+=1
-                    
-                    action=self.act(s,self.data,0)
-                    action = np.array(action).flatten()
-                    agent_states = split_observation(JOINTS, s)
-                    S.append(agent_states)
-                    A.append(action)
-                    s, r, terminated, truncated, info = env.step(action)
-                    done = terminated or truncated
-                #S,A=[S[-1]],[A[-1]]
-                pols=self.data["Agent Policies"] 
-                g=r#env.data["Global Reward"]
+        if parallel:
+            procs=[]
+            team_data=[]
+            q = Queue()
+            for idx,e in zip(range(populationSize),env):
+                p = Process(target=self.proc, args=(q, idx, e))
+                procs.append(p)
+                p.start()
+            for p in procs:
+                ret = q.get() # will block
+                team_data.append(ret)
+            for p in procs:
+                p.join()
+        else:
+            team_data=map(self.proc,[None]*self.pop_size,range(self.pop_size),[env]*self.pop_size)
+        pols=self.data["Agent Populations"] 
+        G=[]
+        for data in team_data:
+            G.append(0)
+            data,idx=data
+            for g,S,A,team in data:
+                G[-1]+=g
                 for i in range(len(S[0])):
 
                     #d=r[i]
                     
-                    pols[i].G.append(g)
+                    pols[team[i]][idx].G.append(g)
                     
                     #pols[i].D.append(g)
-                    pols[i].S.append([])
+                    pols[team[i]][idx].S.append([])
                     for j in range(len(S)):
                         z=[S[j][i],A[j][i],g]
                         #if d!=0:
                         self.hist[team[i]].append(z)
                         #else:
                         #    self.zero[team[i]].append(z)
-                        pols[i].S[-1].append(S[j][i])
-                    pols[i].Z.append(S[-1][i])
-                        
-                G.append(g)
-        
-
+                        pols[team[i]][idx].S[-1].append(S[j][i])
+                    pols[team[i]][idx].Z.append(S[-1][i])
         if train_flag==1 or train_flag==2 or train_flag==3:
             self.updateD()  # env)
         train_set=np.unique(np.array(self.team))
@@ -231,7 +283,7 @@ class learner:
                 if train_flag==4:
                     p.fitness=np.sum(p.D)
                     p.D=[]
-                if  train_flag==5:
+                if  train_flag==5 or train_flag<0:
                     p.fitness=np.sum(p.G)
                     p.G=[]
                 if train_flag==3:

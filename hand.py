@@ -99,6 +99,7 @@ def test():
         print(obs)
         for i in range(1):
             state, reward, terminated, truncated, _ = env.step([0 for _ in range(20)])
+            
     toc=time()
     print("Time: ",toc-tic," seconds")
 
