@@ -54,7 +54,7 @@ def main():
     '''
     Runs lots and lots of experiences through the gym and saves the observations
     '''
-    x = walk_hand(500000)
+    x = walk_hand(100000)
     with open("hand_data.pkl", "wb") as f:
         pickle.dump(x, f)
 

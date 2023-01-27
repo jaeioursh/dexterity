@@ -15,15 +15,22 @@ def test():
     test.set_teams(1)
     for i in tqdm(range(500)):
         print(test.run(env))
-    params=[]
-    for p in test.data["Agent Populations"]:
-        params.append([])
-        for member in p:
-            params[-1].append(member.__getstate__())
-        
-        test.put("data",params)
-        test.save()
+        params=[]
+        for p in test.data["Agent Populations"]:
+            params.append([])
+            for member in p:
+                params[-1].append(member.__getstate__())
+            
+            test.put("data",params)
+            test.save()
+def action_test():
+    env=hand(render_mode="human")
+    act=np.array([1 for i in range(20)])*0.6
+    env.reset()
+    for i in range(100):
+        #act*=-1
+        env.step(act)
 
 if __name__ == "__main__":
-    test()
+    action_test()
     

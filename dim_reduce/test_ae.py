@@ -14,10 +14,11 @@ from autoencoder import Autoencoder, normalize, unnormalize
 def main():
     # Set up environment
     env = gym.make("HandReach-v1", render_mode="human")
+    env = gym.make("HandReach-v1", render_mode="human")
     env.reset()
 
     # Set up model
-    with open("ae_trained.pkl", "rb") as f:
+    with open("ae_trained_48_100_24_6.pkl", "rb") as f:
         savedstuff = pickle.load(f)
     model = savedstuff["model"]
 

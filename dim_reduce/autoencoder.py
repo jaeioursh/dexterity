@@ -53,7 +53,7 @@ def model_from_list(l):
         # Conceptualizing activations "before" layers means we don't have to
         # handle the final hidden->output case as an exception
         if i > 0:
-            layers.append(nn.ReLU())
+            layers.append(nn.Sigmoid())
 
         # Add this layer's linear units
         layers.append(nn.Linear(n_in, n_out))
@@ -83,8 +83,8 @@ class Autoencoder(nn.Module):
 def main():
     # Architecture for our model
     n_dims = [48]
-    n_hid = [100,100,24]
-    n_latent = [6]
+    n_hid = [100,24]
+    n_latent = [20]
     layers = n_dims + n_hid + n_latent  # list addition
 
     model = Autoencoder(layers)
@@ -94,7 +94,7 @@ def main():
         data = pickle.load(f)
     mins, ranges = dataset_stats(data)
     data_norm = normalize(data, mins, ranges)
-
+    #data_norm=data
     # Split to train/val
     train_ratio = 0.8
     n_t = round(train_ratio * data_norm.shape[1])
@@ -109,20 +109,16 @@ def main():
     val_torch = torch.Tensor(val.T).to(device)
 
     # Set up the good stuff
-    lr = 1e-3
-    sched_step, sched_gamma = 5000, 0.5
+    lr = 1e-2
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optim,
-        step_size=sched_step,
-        gamma=sched_gamma,
-    )
+
 
     # Train
-    n_cols = train_torch.size()[1]
-    batchsize = 256
-    epochs = 100000
+    n_cols = train_torch.size()[0]
+    print(n_cols)
+    batchsize = 64
+    epochs = 100
     losses = []
 
     pbar = tqdm.trange(epochs, dynamic_ncols=True)
@@ -130,39 +126,35 @@ def main():
         for epoch in pbar:
             # Minibatches
             cols = torch.randperm(n_cols)
-            loss = []
+            
             for i in range(ceil(n_cols / batchsize)):
                 # Build minibatch
                 start = i * batchsize
                 end = min((i+1) * batchsize, n_cols)
-                batch = train_torch[:, start:end]
+                batch = train_torch[start:end,:]
 
                 # Forward pass
                 optim.zero_grad()
                 out = model.forward(batch)
-                l = loss_fn(train_torch, out)
+                l = loss_fn(batch, out)
 
                 # Backward pass
                 l.backward()
                 optim.step()
-                loss.append(l.detach().cpu())
+                
 
-            # Stop overzealous LR schedulers
-            last_lr = scheduler.get_last_lr()[0]
-            if last_lr >= 1e-5:
-                scheduler.step()
+            
+                # Only validate and update progress bar every 100 epochs
+                if i % 100 == 0:
+                    # Get avg loss from minibatches
+                   
 
-            # Only validate and update progress bar every 100 epochs
-            if i % 100 == 0:
-                # Get avg loss from minibatches
-                loss = sum(loss) / len(loss)
+                    # Validation
+                    out = model.forward(val_torch)
+                    loss_val = loss_fn(val_torch, out)
 
-                # Validation
-                out = model.forward(val_torch)
-                loss_val = loss_fn(val_torch, out)
-
-                losses.append(loss_val.detach().cpu())  # Need to detach or memory leaks
-                pbar.set_description(f"Train: {loss:.3E}, Val: {loss_val:.3E}, LR: {last_lr:.3E}")
+                    #losses.append(loss_val.detach().cpu())  # Need to detach or memory leaks
+                    pbar.set_description(f"Val: {loss_val:.3E}")
 
     except KeyboardInterrupt:
         print("Ending early!")
@@ -173,9 +165,9 @@ def main():
             'model': model.cpu(),
             'mins': mins.flatten(),
             'ranges': ranges.flatten(),
-            'loss': losses[-1],
+            'loss': loss_val,
             'architecture': layers,
-            'params': (epochs, batchsize, lr, sched_step, sched_gamma),
+            'params': (epochs, batchsize, lr),
         }
         pickle.dump(out, f)
         print("Saved model!")
