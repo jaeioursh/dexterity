@@ -86,16 +86,16 @@ def view(fname,conn):
     x=np.zeros(out_size)
 
     fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,axs,model,mins,ranges,axs[-1],conn))
-    plt.pause(100)
+    plt.pause(0)
 if __name__ =="__main__":
     x=[]
-    
-    rec,snd=Pipe()
-
-    fname="ae_trained_48_100_24_2.pkl"
-    
     env = gym.make("HandReach-v1", render_mode="rgb_array")
     env.reset()
+    rec,snd=Pipe()
+
+    fname="ae_trained_48_100_24_6.pkl"
+    
+    
     Process(target=view,args=(fname,rec,)).start()
     Process(target=get_view,args=(snd,)).start()
     #view()
