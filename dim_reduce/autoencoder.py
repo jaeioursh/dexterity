@@ -84,7 +84,7 @@ def main():
     # Architecture for our model
     n_dims = [48]
     n_hid = [100,24]
-    n_latent = [20]
+    n_latent = [6]
     layers = n_dims + n_hid + n_latent  # list addition
 
     model = Autoencoder(layers)
@@ -104,6 +104,7 @@ def main():
 
     # GPU
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
     model.to(device)
     train_torch = torch.Tensor(train.T).to(device)
     val_torch = torch.Tensor(val.T).to(device)
@@ -117,8 +118,8 @@ def main():
     # Train
     n_cols = train_torch.size()[0]
     print(n_cols)
-    batchsize = 64
-    epochs = 100
+    batchsize = 256
+    epochs = 2000
     losses = []
 
     pbar = tqdm.trange(epochs, dynamic_ncols=True)
