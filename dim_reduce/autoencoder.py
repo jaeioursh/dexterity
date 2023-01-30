@@ -53,7 +53,8 @@ def model_from_list(l):
         # Conceptualizing activations "before" layers means we don't have to
         # handle the final hidden->output case as an exception
         if i > 0:
-            layers.append(nn.Sigmoid())
+            #layers.append(nn.Sigmoid())
+            layers.append(nn.LeakyReLU())
 
         # Add this layer's linear units
         layers.append(nn.Linear(n_in, n_out))
@@ -83,7 +84,7 @@ class Autoencoder(nn.Module):
 def main():
     # Architecture for our model
     n_dims = [48]
-    n_hid = [100,24]
+    n_hid = [96,48,12]
     n_latent = [6]
     layers = n_dims + n_hid + n_latent  # list addition
 
@@ -110,7 +111,7 @@ def main():
     val_torch = torch.Tensor(val.T).to(device)
 
     # Set up the good stuff
-    lr = 1e-2
+    lr = 1e-3
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -161,7 +162,9 @@ def main():
         print("Ending early!")
 
     layerstr = "_".join([str(l) for l in layers])
-    with open(f"ae_trained_{layerstr}.pkl", "wb") as f:
+    fname=f"ae_trained_{layerstr}.pkl"
+    print(fname)
+    with open(fname, "wb") as f:
         out = {
             'model': model.cpu(),
             'mins': mins.flatten(),

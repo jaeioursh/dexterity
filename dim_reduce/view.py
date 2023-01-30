@@ -8,9 +8,9 @@ import pickle
 import gymnasium as gym
 from generate_data import Walker
 from autoencoder import Autoencoder, normalize, unnormalize
-from math import sqrt,ceil
+from math import sqrt,ceil, isnan
 from multiprocessing import Process,Pipe
-
+import sys
 
 
 
@@ -25,15 +25,27 @@ def get_view(conn):
         img=env.render()
         conn.send(img)
 
-    
+def clear_var(event):
+    global clicked
+    clicked=False
+
+def set_var(event):
+    global clicked
+    clicked=True    
 
 def onclick(event,axs,model,mins,ranges,wndw,conn):
     idx=0
-    for i in range(len(axs)):
+    global clicked
+
+    
+    for i in range(len(axs)-1):
         if axs[i]==event.inaxes:
             idx=i
     global x
-    
+    global handle
+    if event.xdata is None or event.ydata is None or not clicked:
+        return
+
     x[idx*2]  =event.xdata
     x[idx*2+1]=event.ydata
     with torch.no_grad():
@@ -44,10 +56,15 @@ def onclick(event,axs,model,mins,ranges,wndw,conn):
     conn.send(out)
 
     img=conn.recv()
-
-
-    wndw.imshow(img)
+    print(handle)
+    if handle is None:
+        
+        handle=wndw.imshow(img)
+    else:
+        handle.set_data(img)
+        
     wndw.set_title(np.array2string(np.round(x,2)))
+    plt.draw()
 def get_data(model,mins,ranges):
     with open("hand_data.pkl", "rb") as f:
             data = pickle.load(f)
@@ -57,8 +74,7 @@ def get_data(model,mins,ranges):
 
 
 def view(fname,conn):
-    plt.ion()
-    
+
     with open(fname, "rb") as f:
         savedstuff = pickle.load(f)
     model = savedstuff["model"]
@@ -84,17 +100,21 @@ def view(fname,conn):
     
     global x
     x=np.zeros(out_size)
-
-    fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,axs,model,mins,ranges,axs[-1],conn))
+    
+    fig.canvas.mpl_connect("motion_notify_event", lambda event: onclick(event,axs,model,mins,ranges,axs[-1],conn))
+    fig.canvas.mpl_connect("button_press_event", set_var)
+    fig.canvas.mpl_connect("button_release_event", clear_var)
     plt.pause(0)
 if __name__ =="__main__":
     x=[]
+    handle=None
+    clicked=False
     env = gym.make("HandReach-v1", render_mode="rgb_array")
     env.reset()
     rec,snd=Pipe()
 
-    fname="ae_trained_48_100_24_6.pkl"
-    
+    #fname="ae_trained_48_100_24_6.pkl"
+    fname=sys.argv[1]
     
     Process(target=view,args=(fname,rec,)).start()
     Process(target=get_view,args=(snd,)).start()
