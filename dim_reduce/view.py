@@ -20,8 +20,10 @@ def get_view(conn):
         out=conn.recv()
         pos = out[:24]
         vel = out[24:]
-        env.data.qpos = pos
-        env.data.qvel = vel
+        env.data.qpos[:] = 100
+        env.data.qvel[:] = 100
+        env.data.qpos[:24] = pos
+        env.data.qvel[:24] = vel
         img=env.render()
         conn.send(img)
 
@@ -56,7 +58,7 @@ def onclick(event,axs,model,mins,ranges,wndw,conn):
     conn.send(out)
 
     img=conn.recv()
-    print(handle)
+
     if handle is None:
         
         handle=wndw.imshow(img)
@@ -109,7 +111,7 @@ if __name__ =="__main__":
     x=[]
     handle=None
     clicked=False
-    env = gym.make("HandReach-v1", render_mode="rgb_array")
+    env = gym.make("HandManipulateBlockRotateZDense-v1", render_mode="rgb_array")
     env.reset()
     rec,snd=Pipe()
 
