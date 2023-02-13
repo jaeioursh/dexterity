@@ -14,7 +14,7 @@ def view(save=True):
     params=log.pull("data")[-1][-1]
     for vals,p in zip(params,test.data["Agent Populations"]):
         for weights,member in zip(vals,p):
-            member.__setstate__(weights)
+            member.__setstate__(tuple(weights))
     if save:
         env = hand(render_mode="rgb_array")
         frames=test.view(env)
@@ -29,4 +29,4 @@ def view(save=True):
         test.view(env)
 
 if __name__ == "__main__":
-    view(1)
+    view(0)
