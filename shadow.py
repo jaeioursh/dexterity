@@ -42,7 +42,7 @@ class hand(MujocoManipulateEnv, EzPickle):
         # Select a goal for the object rotation.
         
         
-        angle = self.np_random.uniform(-self.rot_range, self.rot_range)+1
+        angle = self.np_random.uniform(-self.rot_range, self.rot_range)+3.14
         axis = np.array([0.0, 0.0, 1.0])+self.np_random.uniform(0, self.rot_range,3)
         target_quat = quat_from_angle_and_axis(angle, axis)
         

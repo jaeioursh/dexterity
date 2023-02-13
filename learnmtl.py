@@ -36,10 +36,10 @@ def comb(n, r):
 
 
 class Net:
-    def __init__(self,hidden=50):
+    def __init__(self,hidden=100):
         learning_rate=1e-3
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(22, hidden),
+            torch.nn.Linear(61, hidden),
             torch.nn.Tanh(),
             torch.nn.Linear(hidden, hidden),
             torch.nn.Tanh(),
@@ -78,7 +78,7 @@ class learner:
         self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
-        self.hist=[deque(maxlen=20000) for i in range(types)]
+        self.hist=[deque(maxlen=2000) for i in range(types)]
         self.zero=[deque(maxlen=100) for i in range(types)]
         self.itr=0
         self.types=types
@@ -96,7 +96,7 @@ class learner:
         
         #policy shape
         if train_flag>=0:
-            initCcea(input_shape=22, num_outputs=1, num_units=20, num_types=types)(self.data)
+            initCcea(input_shape=61, num_outputs=1, num_units=30, num_types=types)(self.data)
         else:    
             initCcea(input_shape=61, num_outputs=20, num_units=30, num_types=1)(self.data)
         
@@ -105,10 +105,10 @@ class learner:
         policyCol=data["Agent Policies"]
         A=[]
 
-        if self.train_flag>=0:
-            states = split_observation(JOINTS, S)  #["observation"])
-        else:
-            states = S
+        #if self.train_flag>=0:
+        #    states = split_observation(JOINTS, S)  #["observation"])
+        #else:
+        states = S
 
         for s,pol in zip(states,policyCol):
   
@@ -188,12 +188,13 @@ class learner:
             for i in range(100):
                 self.itr+=1
                 if self.train_flag>=0:
-                    agent_states = split_observation(JOINTS, s)
+                    #agent_states = split_observation(JOINTS, s)
+                    agent_states = np.array([s["observation"]]*20)
                 else:
                     agent_states = np.array([s["observation"]])
                 action=self.act(agent_states,self.data,0)
                 action = np.array(action).flatten()
-                
+
                 S.append(agent_states)
                 A.append(action)
                 s, r, terminated, truncated, info = env.step(action)
@@ -217,7 +218,8 @@ class learner:
                 S,A=[],[]
                 for i in range(100):
                     if self.train_flag>=0:
-                        agent_states = split_observation(JOINTS, s)
+                        agent_states = np.array([s["observation"]]*20)
+
                     else:
                         agent_states = np.array([s["observation"]])
                     action=self.act(agent_states,self.data,0)
@@ -225,6 +227,7 @@ class learner:
 
                     s, r, terminated, truncated, info = env.step(action)
                     frames.append(env.render())
+                print(r)
         return frames
     def run(self,env,parallel=True):
         train_flag=self.train_flag
@@ -319,7 +322,7 @@ class learner:
         for i in np.unique(np.array(self.team)):
             for q in range(25): #num batches
                 S,A,D=[],[],[]
-                SAD=robust_sample(self.hist[i],100) #batch size
+                SAD=robust_sample(self.hist[i],64) #batch size
                 
                 for samp in SAD:
                     S.append(samp[0])

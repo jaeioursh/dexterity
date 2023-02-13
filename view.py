@@ -10,8 +10,8 @@ def view(save=True):
     test=learner(1,1,-1)
     test.set_teams(1)
     log=logger()
-    log.load("log.pkl")
-    params=log.pull("data")[-1]
+    log.load("data/1_-1_0.pkl")
+    params=log.pull("data")[-1][-1]
     for vals,p in zip(params,test.data["Agent Populations"]):
         for weights,member in zip(vals,p):
             member.__setstate__(weights)
