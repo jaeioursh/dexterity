@@ -19,9 +19,12 @@ if DEBUG:
     plt.subplot(1,2,1)
 mint=1e9
 colors={0:"D Rand.",1:"End State Aprx.",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
-for n_agents,q in [[20,3],[1,-1]]:
+for q in [3,-1]:
     T=[]
-
+    if q<0:
+        n_agents=1
+    else:
+        n_agents=20
     print(q)
     for i in range(6):
         log = logger.logger()
@@ -39,7 +42,7 @@ for n_agents,q in [[20,3],[1,-1]]:
         if DEBUG:
             plt.subplot(1,2,1)
             plt.plot(t,color=colors[q],alpha=float(i)/12.+0.5)
-
+            print(i,q,t[-1])
         T.append(t)
 
     if DEBUG:
