@@ -208,6 +208,7 @@ class learner:
         return [data,idx]
     def view(self,env):
         frames=[]
+        R=[]
         for idx in range(self.pop_size):
             self.data["World Index"]=idx
                 
@@ -227,8 +228,9 @@ class learner:
 
                     s, r, terminated, truncated, info = env.step(action)
                     frames.append(env.render())
+                R.append(r)
                 print(r)
-        return frames
+        return frames, R
     def run(self,env,parallel=True):
         train_flag=self.train_flag
         populationSize=len(self.data['Agent Populations'][0])
@@ -285,31 +287,31 @@ class learner:
                 #d=p.D[-1]
                 if train_flag==4:
                     p.fitness=np.sum(p.D)
-                    p.D=[]
+                    
                 if  train_flag==5 or train_flag<0:
                     p.fitness=np.sum(p.G)
-                    p.G=[]
                 if train_flag==3:
                     p.D=[np.max(self.Dapprox[t].feed(np.array(p.S[i]))) for i in range(len(p.S))]
                     #p.D=[(self.Dapprox[t].feed(np.array(p.S[i])))[-1] for i in range(len(p.S))]
                     #print(p.D)
                     p.fitness=np.sum(p.D)
-                    p.S=[]
+                    
                 if train_flag==1 or train_flag==2:
                     #self.approx(p,t,S_sample)
                     p.D=list(self.Dapprox[t].feed(np.array(p.Z)))
                     p.fitness=np.sum(p.D)
                     if train_flag==2:
                         p.fitness=np.sum(p.G)-np.sum(p.D)
-                        p.G=[]
-                    #print(p.fitness)
-                    p.Z=[]
-                    
+                        
+                   #print(p.fitness)
+
                 if train_flag==0:
                     d=p.D[-1]
                     p.fitness=d
-        
-
+                p.D=[]
+                p.S=[]
+                p.Z=[]
+                p.G=[]
         evolveCceaPolicies(self.data,train_set)
 
         #self.log.store("reward",max(G))      
