@@ -78,7 +78,7 @@ class learner:
         self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
-        self.hist=[deque(maxlen=2000) for i in range(types)]
+        self.hist=[deque(maxlen=10000) for i in range(types)]
         self.zero=[deque(maxlen=100) for i in range(types)]
         self.itr=0
         self.types=types
@@ -324,7 +324,7 @@ class learner:
         for i in np.unique(np.array(self.team)):
             for q in range(25): #num batches
                 S,A,D=[],[],[]
-                SAD=robust_sample(self.hist[i],64) #batch size
+                SAD=robust_sample(self.hist[i],100) #batch size
                 
                 for samp in SAD:
                     S.append(samp[0])

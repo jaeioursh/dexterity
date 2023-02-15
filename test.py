@@ -8,8 +8,8 @@ import multiprocessing as mp
 
 def test(n_agents,learn_type,idx,parallel=0):
 
-    from guppy import hpy
-    hp = hpy()
+    #from guppy import hpy
+    #hp = hpy()
     r_mode="human"
     r_mode=None
     env = [hand(render_mode=r_mode) for i in range(32)]
@@ -18,7 +18,7 @@ def test(n_agents,learn_type,idx,parallel=0):
     test=learner(n_agents,n_agents,learn_type)
     #test=learner(1,1,-1)
     test.set_teams(1)
-    for i in tqdm(range(20)):
+    for i in tqdm(range(500)):
         if parallel:
             r=test.run(env)
         else:
@@ -28,7 +28,7 @@ def test(n_agents,learn_type,idx,parallel=0):
             params.append([])
             for member in p:
                 params[-1].append([np.array(i) for i in member.__getstate__()])
-        print(hp.heap())
+        #print(hp.heap())
         test.log.store("data",params,-1)
         test.log.store("reward",r)
         if i%25==24:
@@ -50,7 +50,7 @@ def action_test():
 if __name__ == "__main__":
     #test()
     
-    for i in range(1):
-        p = mp.Process(target=test, args=(20,1,i,))
+    for i in range(6):
+        p = mp.Process(target=test, args=(1,-1,i,))
         p.start()
         print

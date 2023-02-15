@@ -18,8 +18,8 @@ lbls={0:"D Rand.",1:"End State Aprx.",2:"Ctrfctl. Aprx.",3:"Fit Critic",4:"$D^\S
 if DEBUG:
     plt.subplot(1,2,1)
 mint=1e9
-colors={0:"D Rand.",1:"End State Aprx.",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
-for q in [3,-1]:
+colors={0:"D Rand.",1:"y",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
+for q in [3,-1,1]:
     T=[]
     if q<0:
         n_agents=1

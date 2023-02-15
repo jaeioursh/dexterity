@@ -10,14 +10,14 @@ def view(save=True):
     
     
     log=logger()
-    if 0:
+    if 1:
         test=learner(1,1,-1)
-        log.load("data/1_-1_5.pkl")
+        log.load("data/1_-1_3.pkl")
     else:
         test=learner(20,20,3)
-        log.load("data/20_3_4.pkl")
+        log.load("data/20_3_0.pkl")
     test.set_teams(1)
-    params=log.pull("data")[-1][-1]
+    params=log.pull("data")
     for vals,p in zip(params,test.data["Agent Populations"]):
         for weights,member in zip(vals,p):
             member.__setstate__(tuple(weights))
@@ -28,6 +28,8 @@ def view(save=True):
         frame_width,frame_height,depth=frames[0].shape
         out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
         Frames=np.array_split(frames,len(R))
+        Frames=[x for _,x in sorted(zip(R,Frames),reverse=1)]
+        R=sorted(R,reverse=1)
         for frame,r,idx in zip(Frames,R,range(len(R))):
             for f in frame:
                 f = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
