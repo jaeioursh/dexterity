@@ -18,7 +18,7 @@ def test(n_agents,learn_type,idx,parallel=0):
     test=learner(n_agents,n_agents,learn_type)
     #test=learner(1,1,-1)
     test.set_teams(1)
-    for i in tqdm(range(500)):
+    for i in tqdm(range(4000)):
         if parallel:
             r=test.run(env)
         else:
@@ -51,6 +51,6 @@ if __name__ == "__main__":
     #test()
     
     for i in range(6):
-        p = mp.Process(target=test, args=(1,-1,i,))
+        p = mp.Process(target=test, args=(20,3,i,))
         p.start()
         print
