@@ -19,7 +19,8 @@ if DEBUG:
     plt.subplot(1,2,1)
 mint=1e9
 colors={0:"D Rand.",1:"y",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
-for q in [3,-1,1]:
+folder="data1"
+for q in [3]:#,-1,1]:
     T=[]
     if q<0:
         n_agents=1
@@ -30,7 +31,7 @@ for q in [3,-1,1]:
         log = logger.logger()
         
         try:
-            log.load("data/"+str(n_agents)+"_"+str(q)+"_"+str(i)+".pkl")
+            log.load(folder+"/"+str(n_agents)+"_"+str(q)+"_"+str(i)+".pkl")
         except:
             continue
     
@@ -41,11 +42,14 @@ for q in [3,-1,1]:
         mint=min(len(t),mint)
         if DEBUG:
             plt.subplot(1,2,1)
-            plt.plot(t,color=colors[q],alpha=float(i)/12.+0.5)
+            plt.plot(t,label=str(i))
             print(i,q,t[-1])
         T.append(t)
-
+    
     if DEBUG:
+        leg=plt.legend()
+        for legobj in leg.legendHandles:
+            legobj.set_linewidth(4.0)
         plt.subplot(1,2,2)
         
 

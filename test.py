@@ -50,7 +50,7 @@ def action_test():
 if __name__ == "__main__":
     #test()
     
-    for i in range(6):
+    for i in range(8):
         p = mp.Process(target=test, args=(20,3,i,))
+        p = mp.Process(target=test, args=(1,-1,i,))
         p.start()
-        print

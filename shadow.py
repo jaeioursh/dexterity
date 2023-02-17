@@ -60,7 +60,7 @@ class hand(MujocoManipulateEnv, EzPickle):
                 d_pos, d_rot = self._goal_distance(achieved_goal, goal)
                 # We weigh the difference in position to avoid that `d_pos` (in meters) is completely
                 # dominated by `d_rot` (in radians).
-                return -(0.1 * d_pos + d_rot)
+                return -(5.0 * d_pos + d_rot)
 
 if __name__ =="__main__":
     env = hand(render_mode="human")
