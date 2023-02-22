@@ -8,9 +8,11 @@ import cv2
 
 def view(save=True):
     
-    folder="data1"
-    idx=str(2)
+    folder="data"
+    idx=0
     single=0
+    
+    idx=str(idx)
     log=logger()
 
     if single:
@@ -18,7 +20,7 @@ def view(save=True):
         log.load(folder+"/1_-1_"+idx+".pkl")
     else:
         test=learner(20,20,3)
-        log.load(folder+"/20_3_"+idx+".pkl")
+        log.load(folder+"/20_5_"+idx+".pkl")
     test.set_teams(1)
     params=log.pull("data")
     for vals,p in zip(params,test.data["Agent Populations"]):
@@ -29,7 +31,7 @@ def view(save=True):
         frames,R=test.view(env)
         print(max(R),np.argmax(R))
         frame_width,frame_height,depth=frames[0].shape
-        out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
+        out = cv2.VideoWriter('outpy'+str(single)+'.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
         Frames=np.array_split(frames,len(R))
         Frames=[x for _,x in sorted(zip(R,Frames),key=lambda x:x[0],reverse=1)]
         R=sorted(R,reverse=1)

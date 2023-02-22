@@ -190,7 +190,8 @@ def assignCceaPolicies(data,team):
     worldIndex = data["World Index"]
     policyCol = [None] * number_agents
     for idx,agentIndex in zip(range(number_agents),team):
-        policyCol[idx] = populationCol[agentIndex][worldIndex]
+        if agentIndex is not None:
+            policyCol[idx] = populationCol[agentIndex][worldIndex]
     data["Agent Policies"] = policyCol
     
 
@@ -199,6 +200,7 @@ def assignBestCceaPolicies(data,team):
     populationCol = data['Agent Populations']
     policyCol = [None] * number_agents
     for idx,agentIndex in zip(range(number_agents),team):
+        
         policyCol[idx] = max(populationCol[agentIndex], key = lambda policy: policy.fitness)
         #policyCol[agentIndex] = populationCol[agentIndex][0]
     data["Agent Policies"] = policyCol

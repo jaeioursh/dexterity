@@ -19,15 +19,15 @@ if DEBUG:
     plt.subplot(1,2,1)
 mint=1e9
 colors={0:"D Rand.",1:"y",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
-folder="data1"
-for q in [3]:#,-1,1]:
+folder="data"
+for q in [3,-1,5]:#,1]:
     T=[]
     if q<0:
         n_agents=1
     else:
         n_agents=20
     print(q)
-    for i in range(6):
+    for i in range(8):
         log = logger.logger()
         
         try:
@@ -40,7 +40,7 @@ for q in [3]:#,-1,1]:
 
         t=np.array(t)
         mint=min(len(t),mint)
-        if DEBUG:
+        if DEBUG and q==5:
             plt.subplot(1,2,1)
             plt.plot(t,label=str(i))
             print(i,q,t[-1])

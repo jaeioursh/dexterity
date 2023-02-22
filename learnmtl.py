@@ -78,17 +78,18 @@ class learner:
         self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
-        self.hist=[deque(maxlen=10000) for i in range(types)]
-        self.zero=[deque(maxlen=100) for i in range(types)]
+        self.hist=[deque(maxlen=10000) for i in range(nagents)]
+        self.zero=[deque(maxlen=100) for i in range(nagents)]
         self.itr=0
         self.types=types
         self.team=[]
         self.index=[]
-        self.Dapprox=[Net() for i in range(self.types)]
+        self.Dapprox=[Net() for i in range(self.nagents)]
 
         self.every_team=self.many_teams()
         self.test_teams=self.every_team
-
+        self.team=self.every_team
+        
         self.data={}
         self.pop_size=32
         self.data["Number of Policies"]=self.pop_size #pop size
@@ -96,12 +97,12 @@ class learner:
         
         #policy shape
         if train_flag>=0:
-            initCcea(input_shape=61, num_outputs=1, num_units=30, num_types=types)(self.data)
+            initCcea(input_shape=61, num_outputs=1, num_units=30, num_types=nagents)(self.data)
         else:    
             initCcea(input_shape=61, num_outputs=20, num_units=30, num_types=1)(self.data)
         
 
-    def act(self,S,data,trial):
+    def act(self,S,data,team):
         policyCol=data["Agent Policies"]
         A=[]
 
@@ -111,8 +112,11 @@ class learner:
         states = S
 
         for s,pol in zip(states,policyCol):
-  
-            a = pol.get_action(s)
+            if pol is not None:
+                a = pol.get_action(s)
+                a=np.asarray(a)[0]
+            else:
+                a = 0.0
             A.append(a)
         return np.array(A)
     
@@ -192,7 +196,7 @@ class learner:
                     agent_states = np.array([s["observation"]]*20)
                 else:
                     agent_states = np.array([s["observation"]])
-                action=self.act(agent_states,self.data,0)
+                action=self.act(agent_states,self.data,team)
                 action = np.array(action).flatten()
 
                 S.append(agent_states)
@@ -260,25 +264,26 @@ class learner:
             for g,S,A,team in data:
                 G[-1]+=g
                 for i in range(len(S[0])):
-
-                    #d=r[i]
-                    
-                    pols[team[i]][idx].G.append(g)
-                    
-                    #pols[i].D.append(g)
-                    pols[team[i]][idx].S.append([])
-                    for j in range(len(S)):
-                        z=[S[j][i],A[j][i],g]
-                        #if d!=0:
-                        self.hist[team[i]].append(z)
-                        #else:
-                        #    self.zero[team[i]].append(z)
-                        pols[team[i]][idx].S[-1].append(S[j][i])
-                    pols[team[i]][idx].Z.append(S[-1][i])
+                    if team[i] is not None:
+                        #d=r[i]
+                        
+                        pols[team[i]][idx].G.append(g)
+                        
+                        #pols[i].D.append(g)
+                        pols[team[i]][idx].S.append([])
+                        for j in range(len(S)):
+                            z=[S[j][i],A[j][i],g]
+                            #if d!=0:
+                            self.hist[team[i]].append(z)
+                            #else:
+                            #    self.zero[team[i]].append(z)
+                            pols[team[i]][idx].S[-1].append(S[j][i])
+                        pols[team[i]][idx].Z.append(S[-1][i])
         if train_flag==1 or train_flag==2 or train_flag==3:
             self.updateD()  # env)
-        train_set=np.unique(np.array(self.team))
-        for t in np.unique(np.array(self.team)):
+        #train_set=np.unique(np.array(self.team))
+        train_set=range(self.nagents)
+        for t in train_set:#np.unique(np.array(self.team)):
             #if train_flag==1:
             #    S_sample=self.state_sample(t)
 
@@ -353,6 +358,17 @@ class learner:
 
             
     def many_teams(self):
+        teams=[]
+        if self.types==self.nagents:
+            teams.append(list(range(self.nagents)))
+        elif (self.types+1)==self.nagents:
+            for i in range(self.nagents):
+                lst=list(range(self.nagents))
+                lst[i]=None
+                teams.append(lst)
+        return teams
+
+    def many_teams_old(self):
         teams=[]
         C=comb(self.types,self.nagents)
         print("Combinations: "+str(C))
