@@ -20,7 +20,7 @@ def test(n_agents,learn_type,idx,types=None,parallel=0):
     test=learner(n_agents,types,learn_type)
     #test=learner(1,1,-1)
 
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(4000)):
         if parallel:
             r=test.run(env)
         else:
@@ -50,7 +50,7 @@ def action_test():
 #train_flag=4 - D*                       X DEPRECATED X
 #train_flag=5 - G*                       X DEPRECATED X
 if __name__ == "__main__":
-    test(20,5,100,types=19,parallel=1)
+    test(1,-2,100,types=1,parallel=1)
     
     #for i in range(8):
     #    p = mp.Process(target=test, args=(20,3,i,))
