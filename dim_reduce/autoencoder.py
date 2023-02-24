@@ -84,8 +84,8 @@ class Autoencoder(nn.Module):
 def main():
     # Architecture for our model
     n_dims = [48]
-    n_hid = [96,48,12]
-    n_latent = [6]
+    n_hid = [96,48]
+    n_latent = [16]
     layers = n_dims + n_hid + n_latent  # list addition
 
     model = Autoencoder(layers)
@@ -93,6 +93,7 @@ def main():
     # Import data
     with open("hand_data.pkl", "rb") as f:
         data = pickle.load(f)
+    #data=data[:24,:]
     mins, ranges = dataset_stats(data)
     data_norm = normalize(data, mins, ranges)
     #data_norm=data
@@ -120,7 +121,7 @@ def main():
     n_cols = train_torch.size()[0]
     print(n_cols)
     batchsize = 256
-    epochs = 2000
+    epochs = 1000
     losses = []
 
     pbar = tqdm.trange(epochs, dynamic_ncols=True)
