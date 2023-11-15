@@ -20,14 +20,14 @@ if DEBUG:
 mint=1e9
 colors={0:"D Rand.",1:"y",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
 folder="data"
-for q in [3,-1,5]:#,1]:
+for q in [5]:#,1]:
     T=[]
     if q<0:
         n_agents=1
     else:
         n_agents=20
     print(q)
-    for i in range(8):
+    for i in [100]:#range(8):
         log = logger.logger()
         
         try:

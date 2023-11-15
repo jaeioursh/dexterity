@@ -36,16 +36,24 @@ def comb(n, r):
 
 
 class Net:
-    def __init__(self,hidden=100):
+    def __init__(self,loss_fn,hidden=100):
         learning_rate=1e-3
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(61, hidden),
+            torch.nn.Linear(62, hidden),
             torch.nn.Tanh(),
             torch.nn.Linear(hidden, hidden),
             torch.nn.Tanh(),
             torch.nn.Linear(hidden,1)
         )
-        self.loss_fn = torch.nn.MSELoss(reduction='sum')
+        self.sig=torch.nn.Sigmoid()
+
+        if loss_fn==0 or loss_fn==3:
+            self.loss_fn = torch.nn.MSELoss(reduction='sum')
+        elif loss_fn==1:
+            self.loss_fn = self.alignment_loss
+        elif loss_fn ==2:
+            self.loss_fn = lambda x,y: self.alignment_loss(x,y) + torch.nn.MSELoss(reduction='sum')(x,y)
+
 
         #self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=learning_rate)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -64,6 +72,20 @@ class Net:
         loss.backward()
         self.optimizer.step()
         return loss.detach().item()
+
+    def alignment_loss(self,o, t):
+
+        ot=torch.transpose(o,0,1)
+        tt=torch.transpose(t,0,1)
+
+        O=o-ot
+        T=t-tt
+
+        align = torch.mul(O,T)
+        #print(align)
+        align = self.sig(align)
+        loss = -torch.mean(align)
+        return loss
     
 def robust_sample(data,n):
         if len(data)<n: 
@@ -74,19 +96,18 @@ def robust_sample(data,n):
 
 class learner:
                     #total agents, subteam size
-    def __init__(self,nagents,types,train_flag):
+    def __init__(self,nagents,train_flag):
         self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
-        self.hist=[deque(maxlen=10000) for i in range(nagents)]
+        self.hist=[deque(maxlen=30000) for i in range(nagents)]
         self.zero=[deque(maxlen=100) for i in range(nagents)]
         self.itr=0
-        self.types=types
         self.team=[]
         self.index=[]
-        self.Dapprox=[Net() for i in range(self.nagents)]
+        self.Dapprox=[Net(train_flag-1) for i in range(self.nagents)]
 
-        self.every_team=self.many_teams()
+        self.every_team=[[i for i in range(nagents)]]
         self.test_teams=self.every_team
         self.team=self.every_team
         
@@ -97,12 +118,12 @@ class learner:
         
         #policy shape
         if train_flag>=0:
-            initCcea(input_shape=61, num_outputs=1, num_units=30, num_types=nagents)(self.data)
+            initCcea(input_shape=62, num_outputs=1, num_units=30, num_types=nagents)(self.data)
         else:    
-            initCcea(input_shape=61, num_outputs=20, num_units=30, num_types=1)(self.data)
+            initCcea(input_shape=62, num_outputs=20, num_units=30, num_types=1)(self.data)
         
 
-    def act(self,S,data,team):
+    def act(self,S,data):
         policyCol=data["Agent Policies"]
         A=[]
 
@@ -112,12 +133,12 @@ class learner:
         states = S
 
         for s,pol in zip(states,policyCol):
-            if pol is not None:
-                a = pol.get_action(s)
-                a=np.asarray(a)[0]
-            else:
-                a = 0.0
+            
+            a = pol.get_action(s)
+            a=np.asarray(a)[0]
+            
             A.append(a)
+        #print(A)
         return np.array(A)
     
 
@@ -169,72 +190,77 @@ class learner:
         #netinfo={i:self.Dapprox[i].model.state_dict() for i in range(len(self.Dapprox))}
         #torch.save(netinfo,fname+".mdl")
 
-    #train_flag=0 - D
-    #train_flag=1 - Neural Net Approx of D
-    #train_flag=2 - counterfactual-aprx
-    #train_flag=3 - fitness critic
-    #train_flag=4 - D*
-    #train_flag=5 - G*
-
+  
     def proc(self,q,idx,env):
 
         self.data["World Index"]=idx
             
         #for agent_idx in range(self.types):
         data=[]
-        for team in self.team:
-            s = env.reset() 
-            s=s[0]
-            done=False 
-            #assignCceaPoliciesHOF(env.data)
-            assignCceaPolicies(self.data,team)
-            S,A=[],[]
-            for i in range(100):
-                self.itr+=1
-                if self.train_flag>=0:
-                    #agent_states = split_observation(JOINTS, s)
-                    agent_states = np.array([s["observation"]]*20)
-                else:
-                    agent_states = np.array([s["observation"]])
-                action=self.act(agent_states,self.data,team)
-                action = np.array(action).flatten()
+        
+        s = env.reset() 
+        s=s[0]
+        done=False 
+        #assignCceaPoliciesHOF(env.data)
+        assignCceaPolicies(self.data)
+        S,A=[],[]
+        R=0.0
+        for i in range(3):
+            self.itr+=1
+            if self.train_flag>=0:
+                #agent_states = split_observation(JOINTS, s)
+                agent_states = np.array([s["observation"]]*20)
+            else:
+                agent_states = np.array([s["observation"]])
+            action=self.act(agent_states,self.data)
+            action = np.array(action).flatten()
 
-                S.append(agent_states)
-                A.append(action)
-                s, r, terminated, truncated, info = env.step(action)
-                done = terminated or truncated
+            S.append(agent_states)
+            A.append(action)
+            s, r, terminated, truncated, info = env.step(action)
+            R+=r
+            done = terminated or truncated
             #S,A=[S[-1]],[A[-1]]
-            data.append([r,S,A,team])
+        data.append([r,S,A])
             
             #G.append(g)
         if q is not None:
             q.put([data,idx])
         return [data,idx]
+    
     def view(self,env):
         frames=[]
         R=[]
         for idx in range(self.pop_size):
             self.data["World Index"]=idx
                 
-            for team in self.team:
-                s = env.reset() 
-                s=s[0]
-                assignCceaPolicies(self.data,team)
-                S,A=[],[]
-                for i in range(100):
-                    if self.train_flag>=0:
-                        agent_states = np.array([s["observation"]]*20)
+            
+            s = env.reset() 
+            s=s[0]
+            assignCceaPolicies(self.data)
+            S,A=[],[]
+            for i in range(100):
+                if self.train_flag>=0:
+                    agent_states = np.array([s["observation"]]*20)
 
-                    else:
-                        agent_states = np.array([s["observation"]])
-                    action=self.act(agent_states,self.data,0)
-                    action = np.array(action).flatten()
+                else:
+                    agent_states = np.array([s["observation"]])
+                action=self.act(agent_states,self.data,0)
+                action = np.array(action).flatten()
 
-                    s, r, terminated, truncated, info = env.step(action)
-                    frames.append(env.render())
-                R.append(r)
-                print(r)
+                s, r, terminated, truncated, info = env.step(action)
+                frames.append(env.render())
+            R.append(r)
+            print(r)
         return frames, R
+    
+    #train_flag=-1 - Single Agent        
+    #train_flag=0 - G                        
+    #train_flag=1 - gapprox
+    #train_flag=2 - align
+    #train_flag=3 - g+align
+    #train_flag=4 - fitness critic
+    
     def run(self,env,parallel=True):
         train_flag=self.train_flag
         populationSize=len(self.data['Agent Populations'][0])
@@ -258,66 +284,58 @@ class learner:
             team_data=map(self.proc,[None]*self.pop_size,range(self.pop_size),[env]*self.pop_size)
         pols=self.data["Agent Populations"] 
         G=[]
-        for data in team_data:
-            G.append(0)
+        for data in team_data: # runs from each pop
+            
             data,idx=data
-            for g,S,A,team in data:
-                G[-1]+=g
-                for i in range(len(S[0])):
-                    if team[i] is not None:
+            
+                
+            for g,S,A in data: #for each sample
+                G.append(g)
+                for i in range(len(S[0])): #for each agent
                         #d=r[i]
                         
-                        pols[team[i]][idx].G.append(g)
-                        
-                        #pols[i].D.append(g)
-                        pols[team[i]][idx].S.append([])
-                        for j in range(len(S)):
-                            z=[S[j][i],A[j][i],g]
-                            #if d!=0:
-                            self.hist[team[i]].append(z)
-                            #else:
-                            #    self.zero[team[i]].append(z)
-                            pols[team[i]][idx].S[-1].append(S[j][i])
-                        pols[team[i]][idx].Z.append(S[-1][i])
-        if train_flag==1 or train_flag==2 or train_flag==3:
+                    pols[i][idx].G.append(g)
+                    
+                    #pols[i].D.append(g)
+                    #pols[i][idx].S.append([])
+                    for j in range(len(S)): #for each time step
+                        sa=np.append(S[j][i],A[j][i])
+                        z=[sa,g]
+                        #if d!=0:
+                        if train_flag==4:
+                            self.hist[i].append(z)
+                        #else:
+                        #    self.zero[team[i]].append(z)
+                        pols[i][idx].S.append(sa)
+                    if train_flag!=4:
+                        self.hist[i].append(z)
+                    pols[i][idx].Z=[sa]
+        if train_flag>0:
             self.updateD()  # env)
-        #train_set=np.unique(np.array(self.team))
-        train_set=range(self.nagents)
-        for t in train_set:#np.unique(np.array(self.team)):
+
+        for t in range(self.nagents):#np.unique(np.array(self.team)):
             #if train_flag==1:
             #    S_sample=self.state_sample(t)
 
             for p in pop[t]:
                 
-                #d=p.D[-1]
-                if train_flag==4:
-                    p.fitness=np.sum(p.D)
+              
                     
-                if  train_flag==5 or train_flag<0:
-                    p.fitness=np.sum(p.G)
-                if train_flag==3:
-                    p.D=[np.max(self.Dapprox[t].feed(np.array(p.S[i]))) for i in range(len(p.S))]
+                if  train_flag==0:
+                    p.G=[np.sum(p.G)]
+                if  train_flag==1 or train_flag==2 or train_flag==3:
+                    p.G=[self.Dapprox[t].feed(np.array(p.Z[0]))]
+                if train_flag==4:
+                    p.G=[np.max(self.Dapprox[t].feed(np.array(p.S)))]
                     #p.D=[(self.Dapprox[t].feed(np.array(p.S[i])))[-1] for i in range(len(p.S))]
                     #print(p.D)
-                    p.fitness=np.sum(p.D)
+                p.fitness=np.sum(p.G)
                     
-                if train_flag==1 or train_flag==2:
-                    #self.approx(p,t,S_sample)
-                    p.D=list(self.Dapprox[t].feed(np.array(p.Z)))
-                    p.fitness=np.sum(p.D)
-                    if train_flag==2:
-                        p.fitness=np.sum(p.G)-np.sum(p.D)
-                        
-                   #print(p.fitness)
-
-                if train_flag==0:
-                    d=p.D[-1]
-                    p.fitness=d
                 p.D=[]
                 p.S=[]
                 p.Z=[]
                 p.G=[]
-        evolveCceaPolicies(self.data,train_set)
+        evolveCceaPolicies(self.data)
 
         #self.log.store("reward",max(G))      
         return max(G)
@@ -327,15 +345,14 @@ class learner:
     def updateD(self):
         
         for i in np.unique(np.array(self.team)):
-            for q in range(25): #num batches
+            for q in range(100): #num batches
                 S,A,D=[],[],[]
-                SAD=robust_sample(self.hist[i],100) #batch size
+                SAD=robust_sample(self.hist[i],20) #batch size
                 
                 for samp in SAD:
                     S.append(samp[0])
-                    A.append(samp[1])
-                    D.append([samp[2]])
-                S,A,D=np.array(S),np.array(A),np.array(D)
+                    D.append([samp[1]])
+                S,D=np.array(S),np.array(D)
                 Z=S#np.hstack((S,A))
                 self.Dapprox[i].train(Z,D)
 
@@ -355,35 +372,8 @@ class learner:
 
 
    
-
-            
-    def many_teams(self):
-        teams=[]
-        if self.types==self.nagents:
-            teams.append(list(range(self.nagents)))
-        elif (self.types+1)==self.nagents:
-            for i in range(self.nagents):
-                lst=list(range(self.nagents))
-                lst[i]=None
-                teams.append(lst)
-        return teams
-
-    def many_teams_old(self):
-        teams=[]
-        C=comb(self.types,self.nagents)
-        print("Combinations: "+str(C))
-        if C<100:
-            for t in combinations(range(self.types),self.nagents):
-                teams.append(list(t))
-        else:
-            for i in range(100):
-                teams.append(self.sample())
-
-        return teams
     
-    def sample(self):
-        n,k=self.nagents,self.types
-        return np.sort(np.random.choice(k,n,replace=False))
+
 
 
 

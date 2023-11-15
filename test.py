@@ -6,10 +6,9 @@ from learnmtl import learner
 from logger import logger
 import multiprocessing as mp
 
-def test(n_agents,learn_type,idx,types=None,parallel=0):
+def test(n_agents,learn_type,idx,parallel=0):
 
-    if types is None:
-        types=n_agents
+ 
     #from guppy import hpy
     #hp = hpy()
     r_mode="human"
@@ -17,24 +16,26 @@ def test(n_agents,learn_type,idx,types=None,parallel=0):
     env = [hand(render_mode=r_mode) for i in range(32)]
     #n_agents=20
     #learn_type=3
-    test=learner(n_agents,types,learn_type)
+    test=learner(n_agents,learn_type)
     #test=learner(1,1,-1)
 
-    for i in tqdm(range(4000)):
+    for i in tqdm(range(2000)):
         if parallel:
             r=test.run(env)
         else:
             r=test.run(env[0],0)
-        params=[]
-        for p in test.data["Agent Populations"]:
-            params.append([])
-            for member in p:
-                params[-1].append([np.array(i) for i in member.__getstate__()])
-        #print(hp.heap())
-        test.log.store("data",params,-1)
-        test.log.store("reward",r)
+        
         if i%25==24:
-            test.save("data/"+str(n_agents)+"_"+str(learn_type)+"_"+str(idx)+".pkl")
+            params=[]
+            for p in test.data["Agent Populations"]:
+                params.append([])
+                for member in p:
+                    params[-1].append([[np.array(i) for i in member.__getstate__()],member.fitness])
+            #print(hp.heap())
+            test.log.store("data",params,-1)
+            test.log.store("reward",r)
+        
+            test.save("data/"str(learn_type)+"_"+str(idx)+".pkl")
 def action_test():
     env=hand(render_mode="human")
     act=np.array([1 for i in range(20)])*0.6
@@ -43,16 +44,23 @@ def action_test():
         #act*=-1
         env.step(act)
 #train_flag=-1 - Single Agent        
-#train_flag=0 - D                        X DEPRECATED X
-#train_flag=1 - End State Approx
-#train_flag=2 - counterfactual-aprx
-#train_flag=3 - fitness critic
-#train_flag=4 - D*                       X DEPRECATED X
-#train_flag=5 - G*                       X DEPRECATED X
+#train_flag=0 - G                        
+#train_flag=1 - gapprox
+#train_flag=2 - align
+#train_flag=3 - g+align
+#train_flag=4 - fitness critic
+
 if __name__ == "__main__":
-    test(1,-2,100,types=1,parallel=1)
-    
-    #for i in range(8):
-    #    p = mp.Process(target=test, args=(20,3,i,))
+    test(20,0,100,parallel=0)
+    for q in [0,1,2,3,4]:
+        procs=[]
+        for i in range(12):
+            print(i,q)
+            p = mp.Process(target=test, args=(20,q,i,))
+            p.start()
+            procs.append(p)
+        for p in procs:
+            p.join()
+        
     #    p = mp.Process(target=test, args=(1,-1,i,))
-    #    p.start()
+    #    

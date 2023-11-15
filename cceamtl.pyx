@@ -184,46 +184,45 @@ def clearFitness(data):
         for policy in populationCol[agentIndex]:
             policy.fitness = 0
     
-def assignCceaPolicies(data,team):
+def assignCceaPolicies(data):
     number_agents = data['Number of Types']
     populationCol = data['Agent Populations']
     worldIndex = data["World Index"]
     policyCol = [None] * number_agents
-    for idx,agentIndex in zip(range(number_agents),team):
-        if agentIndex is not None:
-            policyCol[idx] = populationCol[agentIndex][worldIndex]
+    for idx in range(number_agents):
+        
+        policyCol[idx] = populationCol[idx][worldIndex]
     data["Agent Policies"] = policyCol
     
 
-def assignBestCceaPolicies(data,team):
+def assignBestCceaPolicies(data):
     number_agents = data['Number of Types']
     populationCol = data['Agent Populations']
     policyCol = [None] * number_agents
-    for idx,agentIndex in zip(range(number_agents),team):
-        
-        policyCol[idx] = max(populationCol[agentIndex], key = lambda policy: policy.fitness)
+    for idx in range(number_agents):
+        policyCol[idx] = max(populationCol[idx], key = lambda policy: policy.fitness)
         #policyCol[agentIndex] = populationCol[agentIndex][0]
     data["Agent Policies"] = policyCol
 
 
 
 
-def rewardCceaPolicies(data,team):
+def rewardCceaPolicies(data):
     policyCol = data["Agent Policies"]
     number_agents = data['Number of Types']
     rewardCol = data["Agent Rewards"]
-    for agentIndex,t in zip(range(number_agents),team):
+    for agentIndex in range(number_agents):
         policyCol[agentIndex].fitness = rewardCol[agentIndex]
 
 
 
     
-cpdef evolveCceaPolicies(data,team): 
+cpdef evolveCceaPolicies(data): 
     cdef int number_agents = data['Number of Types']
     populationCol = data['Agent Populations']
     cdef int agentIndex, matchIndex, halfPopLen
     halfPopLen = int(len(populationCol[0])//2)
-    for agentIndex in team:
+    for agentIndex in range(number_agents):
 
         population = populationCol[agentIndex]
         if 1:
@@ -239,6 +238,7 @@ cpdef evolveCceaPolicies(data,team):
                 population[2 * matchIndex + 1].life=[]
                 population[2 * matchIndex + 1].D=[] #new
                 population[2 * matchIndex + 1].Z=[] #new
+                population[2 * matchIndex + 1].S=[]
                 population[2 * matchIndex + 1].fitness=0.0
 
                 population[2 * matchIndex].used=0 #new
