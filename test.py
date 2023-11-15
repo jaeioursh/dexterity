@@ -35,7 +35,7 @@ def test(n_agents,learn_type,idx,parallel=0):
             test.log.store("data",params,-1)
             test.log.store("reward",r)
         
-            test.save("data/"str(learn_type)+"_"+str(idx)+".pkl")
+            test.save("data/"+str(learn_type)+"_"+str(idx)+".pkl")
 def action_test():
     env=hand(render_mode="human")
     act=np.array([1 for i in range(20)])*0.6
