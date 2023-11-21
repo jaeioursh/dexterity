@@ -18,21 +18,20 @@ lbls={0:"D Rand.",1:"End State Aprx.",2:"Ctrfctl. Aprx.",3:"Fit Critic",4:"$D^\S
 if DEBUG:
     plt.subplot(1,2,1)
 mint=1e9
-colors={0:"D Rand.",1:"y",2:"Ctrfctl. Aprx.",3:"b",4:"$D^\Sigma$",5:"$G^\Sigma$",-1:"k"}
+colors={0:"G",1:"G apprx",2:"Align",3:"Both",4:"FC"}
+lbls=colors
 folder="data"
-for q in [5]:#,1]:
+for q in [0,1,2,3,4]:#,1]:
     T=[]
-    if q<0:
-        n_agents=1
-    else:
-        n_agents=20
     print(q)
-    for i in [100]:#range(8):
+    for i in range(12):#range(8):
         log = logger.logger()
         
         try:
-            log.load(folder+"/"+str(n_agents)+"_"+str(q)+"_"+str(i)+".pkl")
+            log.load("data/"+str(q)+"_"+str(i)+".pkl")
         except:
+            print("noload")
+            print("data/"+str(q)+"_"+str(i)+".pkl")
             continue
     
         t=log.pull("reward")
@@ -57,7 +56,7 @@ for q in [5]:#,1]:
     #R=np.mean(R,axis=0)
     T=[t[:mint] for t in T]
     BEST=np.max(T,axis=0)
-    std=np.std(T,axis=0)/np.sqrt(6)
+    std=np.std(T,axis=0)/np.sqrt(12)
     T=np.mean(T,axis=0)
     X=[i*1 for i in range(len(T))]
 

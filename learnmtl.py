@@ -36,8 +36,8 @@ def comb(n, r):
 
 
 class Net:
-    def __init__(self,loss_fn,hidden=100):
-        learning_rate=1e-3
+    def __init__(self,hidden,lr,loss_fn,opti):
+        learning_rate=lr
         self.model = torch.nn.Sequential(
             torch.nn.Linear(62, hidden),
             torch.nn.Tanh(),
@@ -55,8 +55,10 @@ class Net:
             self.loss_fn = lambda x,y: self.alignment_loss(x,y) + torch.nn.MSELoss(reduction='sum')(x,y)
 
 
-        #self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=learning_rate)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+        if opti:
+            self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=learning_rate)
+        else:
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
     def feed(self,x):
         x=torch.from_numpy(x.astype(np.float32))
         pred=self.model(x)
@@ -96,16 +98,22 @@ def robust_sample(data,n):
 
 class learner:
                     #total agents, subteam size
-    def __init__(self,nagents,train_flag):
+    def __init__(self,nagents,train_flag,params):
+        
+        self.lr, self.hidden, self.batch, self.replay_size,opti= params
+        self.hidden,self.batch,self.replay_size,opti=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti]]
+
+
+
         self.train_flag=train_flag
         self.log=logger()
         self.nagents=nagents
-        self.hist=[deque(maxlen=30000) for i in range(nagents)]
-        self.zero=[deque(maxlen=100) for i in range(nagents)]
+        self.hist=[deque(maxlen=self.replay_size) for i in range(nagents)]
+        self.zero=[deque(maxlen=self.replay_size) for i in range(nagents)]
         self.itr=0
         self.team=[]
         self.index=[]
-        self.Dapprox=[Net(train_flag-1) for i in range(self.nagents)]
+        self.Dapprox=[Net(self.hidden,self.lr,train_flag-1,opti) for i in range(self.nagents)]
 
         self.every_team=[[i for i in range(nagents)]]
         self.test_teams=self.every_team
@@ -347,7 +355,7 @@ class learner:
         for i in np.unique(np.array(self.team)):
             for q in range(100): #num batches
                 S,A,D=[],[],[]
-                SAD=robust_sample(self.hist[i],20) #batch size
+                SAD=robust_sample(self.hist[i],self.batch) #batch size
                 
                 for samp in SAD:
                     S.append(samp[0])

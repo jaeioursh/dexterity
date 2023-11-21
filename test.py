@@ -6,7 +6,7 @@ from learnmtl import learner
 from logger import logger
 import multiprocessing as mp
 
-def test(n_agents,learn_type,idx,parallel=0):
+def test(n_agents,learn_type,idx,save,params,parallel=0):
 
  
     #from guppy import hpy
@@ -16,16 +16,16 @@ def test(n_agents,learn_type,idx,parallel=0):
     env = [hand(render_mode=r_mode) for i in range(32)]
     #n_agents=20
     #learn_type=3
-    test=learner(n_agents,learn_type)
+    test=learner(n_agents,learn_type,params)
     #test=learner(1,1,-1)
-
-    for i in tqdm(range(2000)):
+    R=[]
+    for i in tqdm(range(1000)):
         if parallel:
             r=test.run(env)
         else:
             r=test.run(env[0],0)
-        
-        if i%25==24:
+        R.append(r)
+        if i%25==24 and save:
             params=[]
             for p in test.data["Agent Populations"]:
                 params.append([])
@@ -36,6 +36,7 @@ def test(n_agents,learn_type,idx,parallel=0):
             test.log.store("reward",r)
         
             test.save("data/"+str(learn_type)+"_"+str(idx)+".pkl")
+    return max(R[-20:])
 def action_test():
     env=hand(render_mode="human")
     act=np.array([1 for i in range(20)])*0.6
