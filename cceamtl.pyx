@@ -49,18 +49,18 @@ cdef reluInPlace(double[:] vec):
 @cython.wraparound(False)   # Deactivate negative indexing. 
 cdef mutate(double[:] vec, double m, double mr):
     shape = [vec.shape[0]]
-    npMutation = np.random.standard_cauchy(shape)
+    npMutation = np.random.normal(1.0, m, shape)
     npMutation *= np.random.uniform(0, 1, shape) < mr
-    cdef double[:] mutation = npMutation
+    cdef double[:] mutation = npMutation-vec
     addInPlace(vec, mutation)
     
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing. 
 cdef mutateMat(double[:,:] mat, double m, double mr):
     shape = [mat.shape[0], mat.shape[1]]
-    npMutation = m * np.random.standard_cauchy(shape)
+    npMutation = np.random.normal(1.0, m, shape)
     npMutation *= np.random.uniform(0, 1, shape) < mr
-    cdef double[:,:] mutation = npMutation
+    cdef double[:,:] mutation = npMutation-mat
     addInPlaceMat(mat, mutation)
 
 @cython.auto_pickle(True)        
@@ -80,6 +80,8 @@ cdef class Evo_MLP:
     cdef public int input_shape
     cdef public int num_outputs
     cdef public int num_units
+    cdef public double mr
+    cdef public double m
     cdef public double fitness
     cdef public list life
 
@@ -89,10 +91,12 @@ cdef class Evo_MLP:
     cdef public list S 
     cdef public int used
     
-    def __init__(self, input_shape, num_outputs, num_units=16):
+    def __init__(self, input_shape, num_outputs, num_units=16,mr=0.05,m=0.05):
         self.input_shape = input_shape
         self.num_outputs = num_outputs
         self.num_units = num_units
+        self.mr=mr
+        self.m=m
         self.fitness = 0.0
         self.life = []
         self.D=[]
@@ -141,8 +145,8 @@ cdef class Evo_MLP:
         return self.out #change
 
     cpdef mutate(self):
-        cdef double m = 1.0
-        cdef double mr = 0.05
+        cdef double m = self.m
+        cdef double mr = self.mr
         mutateMat(self.inToHiddenMat, m, mr)
         mutate(self.inToHiddenBias, m, mr)
         mutateMat(self.hiddenToOutMat, m, mr)
@@ -167,12 +171,12 @@ cdef class Evo_MLP:
         
         
 
-def initCcea(input_shape, num_outputs, num_units=16,num_types=10):
+def initCcea(input_shape, num_outputs,num_types, num_units=16,mr=0.05,m=0.05):
     def initCceaGo(data):
         data['Number of Types']=num_types
         number_agents = data['Number of Types']
         policyCount = data['Number of Policies']
-        populationCol = [[Evo_MLP(input_shape,num_outputs,num_units) for i in range(policyCount)] for j in range(number_agents)] 
+        populationCol = [[Evo_MLP(input_shape,num_outputs,num_units,mr,m) for i in range(policyCount)] for j in range(number_agents)] 
         data['Agent Populations'] = populationCol
     return initCceaGo
     

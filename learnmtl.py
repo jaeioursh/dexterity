@@ -100,8 +100,8 @@ class learner:
                     #total agents, subteam size
     def __init__(self,nagents,train_flag,params):
         
-        self.lr, self.hidden, self.batch, self.replay_size,opti= params
-        self.hidden,self.batch,self.replay_size,opti=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti]]
+        self.lr, self.hidden, self.batch, self.replay_size,opti,polh,m,mr= params
+        self.hidden,self.batch,self.replay_size,opti,polh=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti,polh]]
 
 
 
@@ -126,9 +126,9 @@ class learner:
         
         #policy shape
         if train_flag>=0:
-            initCcea(input_shape=62, num_outputs=1, num_units=30, num_types=nagents)(self.data)
+            initCcea(input_shape=62, num_outputs=1,num_types=20, num_units=polh,m=m,mr=mr)(self.data)
         else:    
-            initCcea(input_shape=62, num_outputs=20, num_units=30, num_types=1)(self.data)
+            initCcea(input_shape=62, num_outputs=20,num_types=1, num_units=polh,m=m,mr=mr)(self.data)
         
 
     def act(self,S,data):
