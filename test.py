@@ -19,7 +19,7 @@ def test(n_agents,learn_type,idx,save,params,parallel=0):
     test=learner(n_agents,learn_type,params)
     #test=learner(1,1,-1)
     R=[]
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(700)):
         if parallel:
             r=test.run(env)
         else:
