@@ -49,7 +49,7 @@ cdef reluInPlace(double[:] vec):
 @cython.wraparound(False)   # Deactivate negative indexing. 
 cdef mutate(double[:] vec, double m, double mr):
     shape = [vec.shape[0]]
-    npMutation = np.random.normal(1.0, m, shape)
+    npMutation = np.random.normal(1.0, m, shape)*vec
     npMutation *= np.random.uniform(0, 1, shape) < mr
     cdef double[:] mutation = npMutation-vec
     addInPlace(vec, mutation)
@@ -58,7 +58,7 @@ cdef mutate(double[:] vec, double m, double mr):
 @cython.wraparound(False)   # Deactivate negative indexing. 
 cdef mutateMat(double[:,:] mat, double m, double mr):
     shape = [mat.shape[0], mat.shape[1]]
-    npMutation = np.random.normal(1.0, m, shape)
+    npMutation = np.random.normal(1.0, m, shape)*mat
     npMutation *= np.random.uniform(0, 1, shape) < mr
     cdef double[:,:] mutation = npMutation-mat
     addInPlaceMat(mat, mutation)
