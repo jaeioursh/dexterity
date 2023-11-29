@@ -16,14 +16,14 @@ def opt(test0,idx):
             print("saving "+str(len(res.x_iters)))
             print(data)
             pkl.dump(data,f)
-    res = gp_minimize(testg, C, n_calls=50,callback=[saver],n_jobs=3)#,acq_func="PI")
+    res = gp_minimize(testg, C, n_calls=50,callback=[saver])#,acq_func="PI")
     print(res.x)
     print(res.fun)
     
 
 procs=[]
 
-for idx in range(3):
+for idx in range(4):
     p=mp.Process(target=opt,args=(test0,idx))
     p.start()
     procs.append(p)
