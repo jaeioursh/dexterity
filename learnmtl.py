@@ -103,7 +103,7 @@ class learner:
         self.lr, self.hidden, self.batch, self.replay_size,opti,polh,m,mr= params
         self.hidden,self.batch,self.replay_size,opti,polh=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti,polh]]
 
-
+        self.idx=0
 
         self.train_flag=train_flag
         self.log=logger()
@@ -270,6 +270,7 @@ class learner:
     #train_flag=4 - fitness critic
     
     def run(self,env,parallel=True):
+        self.idx+=1
         train_flag=self.train_flag
         populationSize=len(self.data['Agent Populations'][0])
         pop=self.data['Agent Populations']
@@ -327,7 +328,9 @@ class learner:
 
             for p in pop[t]:
                 
-              
+                if self.idx%250==0:
+                    p.m/=2.0
+                    p.mr/=2.0
                     
                 if  train_flag==0:
                     p.G=[np.sum(p.G)]
