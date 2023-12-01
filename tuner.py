@@ -16,7 +16,7 @@ def opt(test0,idx):
             print("saving "+str(len(res.x_iters)))
             print(data)
             pkl.dump(data,f)
-    res = gp_minimize(testg, C, n_calls=50,callback=[saver])#,acq_func="PI")
+    res = gp_minimize(test0, C, n_calls=50,callback=[saver])#,acq_func="PI")
     print(res.x)
     print(res.fun)
     
