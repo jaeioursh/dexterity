@@ -99,7 +99,8 @@ def robust_sample(data,n):
 class learner:
                     #total agents, subteam size
     def __init__(self,nagents,train_flag,params):
-        params=[0,0,0,0,0]+params
+        #params=[0,0,0,0,0]+params
+        params+=[53, 0.40, 0.45]
         self.lr, self.hidden, self.batch, self.replay_size,opti,polh,m,mr= params
         self.hidden,self.batch,self.replay_size,opti,polh=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti,polh]]
 
