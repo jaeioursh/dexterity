@@ -39,7 +39,7 @@ class Net:
     def __init__(self,hidden,lr,loss_fn,opti):
         learning_rate=lr
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(62, hidden),
+            torch.nn.Linear(35, hidden),
             torch.nn.Tanh(),
             torch.nn.Linear(hidden, hidden),
             torch.nn.Tanh(),
@@ -99,9 +99,9 @@ def robust_sample(data,n):
 class learner:
                     #total agents, subteam size
     def __init__(self,nagents,train_flag,params):
-        #params=[0,0,0,0,0]+params
-        polh,m,mr=[53, 0.40, 0.45]
-        self.lr, self.hidden, self.batch, self.replay_size,opti= params
+        params=[0,0,0,0,0]+params
+        #polh,m,mr=[53, 0.40, 0.45]
+        self.lr, self.hidden, self.batch, self.replay_size,opti,polh,m,mr= params
         self.hidden,self.batch,self.replay_size,opti,polh=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti,polh]]
 
         self.idx=0
@@ -127,7 +127,7 @@ class learner:
         
         #policy shape
         if train_flag>=0:
-            initCcea(input_shape=62, num_outputs=1,num_types=20, num_units=polh,m=m,mr=mr)(self.data)
+            initCcea(input_shape=31, num_outputs=4,num_types=nagents, num_units=polh,m=m,mr=mr)(self.data)
         else:    
             initCcea(input_shape=62, num_outputs=20,num_types=1, num_units=polh,m=m,mr=mr)(self.data)
         
@@ -144,7 +144,7 @@ class learner:
         for s,pol in zip(states,policyCol):
             
             a = pol.get_action(s)
-            a=np.asarray(a)[0]
+            a=np.asarray(a)
             
             A.append(a)
         #print(A)
@@ -206,21 +206,44 @@ class learner:
             
         #for agent_idx in range(self.types):
         data=[]
-        
+        '''
         s = env.reset() 
         s=s[0]
-        done=False 
+        done=False
+        ''' 
         #assignCceaPoliciesHOF(env.data)
         assignCceaPolicies(self.data)
         S,A=[],[]
         R=0.0
-        for i in range(3):
-            self.itr+=1
-            if self.train_flag>=0:
-                #agent_states = split_observation(JOINTS, s)
-                agent_states = np.array([s["observation"]]*20)
-            else:
-                agent_states = np.array([s["observation"]])
+
+        observations,infos=env.reset(seed=42)
+        
+        for i in range(150):
+            
+        # this is where you would insert your policy
+            #actions = {agent: env.action_space(agent).sample() for agent in env.agents}
+            #print(len(actions))
+            obs=[observations["walker_"+str(a)] for a in range(self.nagents)]
+            obs=np.array(obs,dtype=np.float64)
+            action=self.act(obs,self.data)
+            actions = {"walker_"+str(aidx): np.array(action[aidx],dtype=np.float32) for aidx in range(self.nagents)}
+            #print(actions)
+            observations, rewards, terminations, truncations, infos = env.step(actions)
+            
+            #R=env.env.unwrapped.env.package.position.x
+            S.append(obs)
+            A.append(action)
+            
+            if len(env.agents)!=self.nagents:
+                R-=20
+                break
+        R+=env.unwrapped.env.package.position.x
+        R/=10
+        '''
+        for i in range(150):
+            #self.itr+=1
+            
+
             action=self.act(agent_states,self.data)
             action = np.array(action).flatten()
 
@@ -230,7 +253,8 @@ class learner:
             R+=r
             done = terminated or truncated
             #S,A=[S[-1]],[A[-1]]
-        data.append([r,S,A])
+        '''
+        data.append([R,S,A])
             
             #G.append(g)
         if q is not None:
