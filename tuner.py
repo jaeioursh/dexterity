@@ -23,7 +23,7 @@ def opt(test0,idx):
 
 procs=[]
 
-for idx in range(4,8):
+for idx in range(4):
     p=mp.Process(target=opt,args=(test0,idx))
     p.start()
     procs.append(p)
