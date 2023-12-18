@@ -3,7 +3,7 @@
 import pickle as pkl
 import numpy as np
 
-for i in range(4,8):
+for i in range(8):
     idx=i
 
     with open("data/w"+str(idx)+".pkl","rb") as f:

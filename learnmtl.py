@@ -40,9 +40,9 @@ class Net:
         learning_rate=lr
         self.model = torch.nn.Sequential(
             torch.nn.Linear(35, hidden),
-            torch.nn.Tanh(),
+            torch.nn.ReLU(),
             torch.nn.Linear(hidden, hidden),
-            torch.nn.Tanh(),
+            torch.nn.ReLU(),
             torch.nn.Linear(hidden,1)
         )
         self.sig=torch.nn.Sigmoid()
@@ -101,9 +101,11 @@ class learner:
     def __init__(self,nagents,train_flag,params):
         #params=[0,0,0,0,0]+params
         #polh,m,mr=
-        params=[p for p in params]+[76.0, 0.6, 0.3]
+        params=[p for p in params]+[100.0, 0.1, 0.1]
 
-        self.lr, self.hidden, self.batch, self.replay_size,opti,polh,m,mr= params
+        self.lr, self.batch, self.replay_size,polh,m,mr= params
+        self.hidden=300
+        opti=1.0
         self.hidden,self.batch,self.replay_size,opti,polh=[int (q) for q in [self.hidden,self.batch,self.replay_size,opti,polh]]
 
         self.idx=0
