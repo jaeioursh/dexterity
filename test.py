@@ -23,7 +23,7 @@ def test(n_agents,learn_type,idx,save,params):
     test=learner(n_agents,learn_type,params)
     #test=learner(1,1,-1)
     R=[]
-    for i in tqdm(range(500)):
+    for i in tqdm(range(1000)):
         
         r=test.run(env,0)
         R.append(r)
@@ -86,19 +86,26 @@ def action_test():
 
 if __name__ == "__main__":
     #action_test()
+    '''
     p=[0.001,40.0,60.0,10000.0,0.7]+[53, 0.40, 0.45]
     test(4,0,1000,False,p)
     '''
-    test(20,0,100,parallel=0)
+    #test(20,0,100,parallel=0)
+    params=[0.00075, 220, 90000]
     for q in [0,1,2,3,4]:
         procs=[]
         for i in range(12):
             print(i,q)
-            p = mp.Process(target=test, args=(20,q,i,))
+            save=True
+            idx=i
+            learn_type=q
+            n_agents=4
+            p = mp.Process(target=test, args=(n_agents,learn_type,idx,save,params))
             p.start()
             procs.append(p)
         for p in procs:
             p.join()
+    '''
     '''
     #    p = mp.Process(target=test, args=(1,-1,i,))
     #    
