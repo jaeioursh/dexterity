@@ -37,7 +37,7 @@ def test(n_agents,learn_type,idx,save,params):
             test.log.store("data",params,-1)
             test.log.store("reward",r)
         
-            test.save("data/"+str(learn_type)+"_"+str(idx)+".pkl")
+            test.save("data/Q"+str(learn_type)+"_"+str(idx)+".pkl")
     return max(R[-20:])
 
 def action_test():
