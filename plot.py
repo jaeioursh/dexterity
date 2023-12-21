@@ -28,10 +28,10 @@ for q in [0,1,2,3,4]:#,1]:
         log = logger.logger()
         
         try:
-            log.load("data/"+str(q)+"_"+str(i)+".pkl")
+            log.load("data/Q"+str(q)+"_"+str(i)+".pkl")
         except:
             print("noload")
-            print("data/"+str(q)+"_"+str(i)+".pkl")
+            print("data/Q"+str(q)+"_"+str(i)+".pkl")
             continue
     
         t=log.pull("reward")
@@ -56,7 +56,7 @@ for q in [0,1,2,3,4]:#,1]:
     #R=np.mean(R,axis=0)
     T=[t[:mint] for t in T]
     BEST=np.max(T,axis=0)
-    std=np.std(T,axis=0)/np.sqrt(12)
+    std=np.std(T,axis=0)/np.sqrt(120)
     T=np.mean(T,axis=0)
     X=[i*1 for i in range(len(T))]
 

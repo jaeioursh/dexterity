@@ -101,7 +101,7 @@ class learner:
     def __init__(self,nagents,train_flag,params):
         #params=[0,0,0,0,0]+params
         #polh,m,mr=
-        params=[p for p in params]+[100.0, 0.1, 0.1]
+        params=[p for p in params]+[100.0, 0.05, 0.05]
 
         self.lr, self.batch, self.replay_size,polh,m,mr= params
         self.hidden=300
@@ -216,7 +216,10 @@ class learner:
         done=False
         ''' 
         #assignCceaPoliciesHOF(env.data)
-        assignCceaPolicies(self.data)
+        if idx<0:
+            assignBestCceaPolicies(self.data)
+        else:
+            assignCceaPolicies(self.data)
         S,A=[],[]
         R=0.0
 
@@ -297,7 +300,9 @@ class learner:
     #train_flag=2 - align
     #train_flag=3 - g+align
     #train_flag=4 - fitness critic
-    
+    def test(self,env):
+        return self.proc(None,-1,env)[0][0]
+
     def run(self,env,parallel=True):
         self.idx+=1
         train_flag=self.train_flag

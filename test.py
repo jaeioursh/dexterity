@@ -26,6 +26,8 @@ def test(n_agents,learn_type,idx,save,params):
     for i in tqdm(range(1000)):
         
         r=test.run(env,0)
+        rr=test.test(env)
+        test.log.store("reward",rr)
         R.append(r)
         if i%25==24 and save:
             params=[]
@@ -35,7 +37,7 @@ def test(n_agents,learn_type,idx,save,params):
                     params[-1].append([[np.array(i) for i in member.__getstate__()],member.fitness])
             #print(hp.heap())
             test.log.store("data",params,-1)
-            test.log.store("reward",r)
+            
         
             test.save("data/Q"+str(learn_type)+"_"+str(idx)+".pkl")
     return max(R[-20:])
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     test(4,0,1000,False,p)
     '''
     #test(20,0,100,parallel=0)
-    params=[0.00075, 220, 90000]
+    params=[0.001, 64, 1000]
     for q in [0,1,2,3,4]:
         procs=[]
         for i in range(12):
