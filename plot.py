@@ -21,7 +21,7 @@ mint=1e9
 colors={0:"G",1:"G apprx",2:"Align",3:"Both",4:"FC"}
 lbls=colors
 folder="data"
-for q in [0,1,2,3,4]:#,1]:
+for q in [0]:#,1,2,3,4]:#,1]:
     T=[]
     print(q)
     for i in range(12):#range(8):
@@ -35,7 +35,7 @@ for q in [0,1,2,3,4]:#,1]:
             continue
     
         t=log.pull("reward")
-        
+        print(np.array(t).shape)
 
         t=np.array(t)
         mint=min(len(t),mint)

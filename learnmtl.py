@@ -51,7 +51,7 @@ class Net:
             self.loss_fn = torch.nn.MSELoss(reduction='sum')
         elif loss_fn==1:
             self.loss_fn = self.alignment_loss
-        elif loss_fn ==2:
+        elif loss_fn ==2 or loss_fn==4:
             self.loss_fn = lambda x,y: self.alignment_loss(x,y) + torch.nn.MSELoss(reduction='sum')(x,y)
 
 
@@ -242,7 +242,7 @@ class learner:
             A.append(action)
             
             if len(env.agents)!=self.nagents:
-                R-=20
+                R-=10
                 break
         R+=env.unwrapped.env.package.position.x
         R/=10
@@ -301,7 +301,7 @@ class learner:
     #train_flag=3 - g+align
     #train_flag=4 - fitness critic
     def test(self,env):
-        return self.proc(None,-1,env)[0][0]
+        return self.proc(None,-1,env)[0][0][0]
 
     def run(self,env,parallel=True):
         self.idx+=1
@@ -345,12 +345,12 @@ class learner:
                         sa=np.append(S[j][i],A[j][i])
                         z=[sa,g]
                         #if d!=0:
-                        if train_flag==4:
+                        if train_flag>=4:
                             self.hist[i].append(z)
                         #else:
                         #    self.zero[team[i]].append(z)
                         pols[i][idx].S.append(sa)
-                    if train_flag!=4:
+                    if train_flag<4:
                         self.hist[i].append(z)
                     pols[i][idx].Z=[sa]
         if train_flag>0:
@@ -362,15 +362,15 @@ class learner:
 
             for p in pop[t]:
                 
-                if self.idx%250==0:
-                    p.m/=2.0
-                    p.mr/=2.0
+                #if self.idx%250==0:
+                #    p.m/=2.0
+                #    p.mr/=2.0
                     
                 if  train_flag==0:
                     p.G=[np.sum(p.G)]
                 if  train_flag==1 or train_flag==2 or train_flag==3:
                     p.G=[self.Dapprox[t].feed(np.array(p.Z[0]))]
-                if train_flag==4:
+                if train_flag>=4:
                     p.G=[np.max(self.Dapprox[t].feed(np.array(p.S)))]
                     #p.D=[(self.Dapprox[t].feed(np.array(p.S[i])))[-1] for i in range(len(p.S))]
                     #print(p.D)

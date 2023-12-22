@@ -94,7 +94,7 @@ if __name__ == "__main__":
     '''
     #test(20,0,100,parallel=0)
     params=[0.001, 64, 1000]
-    for q in [0,1,2,3,4]:
+    for q in [0,1,2,3,4,5]:
         procs=[]
         for i in range(12):
             print(i,q)
